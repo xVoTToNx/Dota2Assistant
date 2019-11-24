@@ -1,0 +1,65 @@
+#ifndef DATATABWIDGET_H
+#define DATATABWIDGET_H
+
+#include <QWidget>
+#include <QHBoxLayout>
+#include <QVBoxLayout>
+#include <QGridLayout>
+#include <QTabWidget>
+#include <QSqlDatabase>
+#include <QtSql>
+#include <QTableView>
+#include <QPushButton>
+#include <QComboBox>
+#include <QLabel>
+#include <QSpinBox>
+#include <QLineEdit>
+#include <QMessageBox>
+#include <QDateEdit>
+
+#include <functional>
+#include "sort_filter_proxy_model.h"
+
+#define TY_QT_FOR_CHAR 34
+
+
+class DataTabWidget : public QWidget
+{
+public:
+    Q_OBJECT
+
+private:
+    QString name;
+    SortFilterProxyModel* sfp_model;
+    QSqlTableModel* test_model;
+
+    QHBoxLayout* layout;
+
+        QVBoxLayout* table_layout;
+            QHBoxLayout* table_button_layout;
+                QLabel* table_label;
+                QComboBox* table_combobox;
+                QPushButton* insert_button;
+                QPushButton* remove_button;
+
+            QTableView* table_view;
+
+        QTabWidget* filter_search_tab_widget;
+            QWidget* filter_tab_widget;
+            QWidget* search_tab_widget;
+
+public:
+    explicit DataTabWidget(QString&& name = "", QWidget *parent = nullptr);
+
+    QString GetName() { return name; }
+
+private:
+    void insertRow();
+    void removeRow();
+    void changeFilterSearchTabs();
+
+private slots:
+    void changeTable(const QString& table_name);
+};
+
+#endif // DATATABWIDGET_H
