@@ -45,6 +45,20 @@ MainWindow::MainWindow(QWidget *parent)
     main_tab_widget->addTab(icons_tab_widget, icons_tab_widget->GetName());
 
 
+    connect(main_tab_widget, &QTabWidget::currentChanged, [this](int index)
+    {
+       switch (index)
+       {
+       case 0:
+           data_tab_widget->Update();
+           break;
+       case 1:
+           icons_tab_widget->Update();
+           break;
+       }
+    });
+
+
     main_tab_widget->show();
 }
 

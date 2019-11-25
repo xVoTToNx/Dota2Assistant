@@ -33,6 +33,7 @@ public:
 
 private:
     QString name;
+    QString current_table;
 
     QTableView* table_view;
     FilterProxyModel* filter_model;
@@ -56,6 +57,7 @@ private:
 public:
     explicit DataTabWidget(QString&& name = "", QWidget *parent = nullptr);
 
+    void Update() {changeTable(current_table);}
     QString GetName() { return name; }
 
 private:

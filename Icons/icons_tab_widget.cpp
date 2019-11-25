@@ -17,6 +17,8 @@ IconsTabWidget::IconsTabWidget(QString&& name, QWidget *parent)
     , clear_button (new QPushButton("CLR", this))
     , search_line_edit (new QLineEdit(this))
 {
+    connect(filter_model, &QSqlTableModel::dataChanged, [this](){this->updateTable(this->current_table);});
+
     filter_model->setSourceModel(model);
     filter_model->setDynamicSortFilter(false);
 
@@ -94,13 +96,22 @@ void IconsTabWidget::updateTable(Icon icon)
         switch(icon)
         {
         case Icon::hero:
-            table_name = "test";
+            connect(button, &QPushButton::clicked, [](){
+                auto icon = HeroIcon::CreateMe();
+                icon->setAttribute(Qt::WA_DeleteOnClose);
+                icon->show(); });
             break;
         case Icon::item:
-            table_name = "test2";
+            connect(button, &QPushButton::clicked, [](){
+                auto icon = ItemIcon::CreateMe();
+                icon->setAttribute(Qt::WA_DeleteOnClose);
+                icon->show(); });
             break;
         case Icon::team:
-            table_name = "testc";
+            connect(button, &QPushButton::clicked, [](){
+                auto icon = TeamIcon::CreateMe();
+                icon->setAttribute(Qt::WA_DeleteOnClose);
+                icon->show(); });
             break;
         }
         icons_layout->addWidget(button, 1 + i / columns, i % columns);

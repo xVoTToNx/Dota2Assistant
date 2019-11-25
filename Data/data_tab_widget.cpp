@@ -4,6 +4,7 @@
 DataTabWidget::DataTabWidget(QString&& name, QWidget *parent)
     : QWidget(parent)
     , name(name)
+    , current_table("test")
     , table_view (new QTableView(this))
     , filter_model (new FilterProxyModel(this))
     , search_model (new SearchProxyModel(table_view, this))
@@ -59,7 +60,7 @@ DataTabWidget::DataTabWidget(QString&& name, QWidget *parent)
     search_tab_widget->setLayout(new QGridLayout());
     filter_search_tab_widget->addTab(search_tab_widget,"Search");
 
-    changeTable("Test");
+    changeTable(current_table);
     setLayout(layout);
 }
 
@@ -233,6 +234,7 @@ void DataTabWidget::changeFilterSearchTabs()
 
 void DataTabWidget::changeTable(const QString& table_name)
 {
+    current_table = table_name;
     test_model->setTable(table_name);
     test_model->setEditStrategy(QSqlTableModel::OnFieldChange);
     test_model->select();

@@ -6,8 +6,8 @@
 #include <QSqlDatabase>
 
 
-#include "data_tab_widget.h"
-#include "icons_tab_widget.h"
+#include "Data/data_tab_widget.h"
+#include "Icons/icons_tab_widget.h"
 
 
 

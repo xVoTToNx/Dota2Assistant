@@ -10,7 +10,11 @@
 #include <QSqlTableModel>
 
 
+
 #include "filter_proxy_model.h"
+#include "hero_icon.h"
+#include "item_icon.h"
+#include "team_icon.h"
 
 
 class IconsTabWidget : public QWidget
@@ -44,6 +48,7 @@ private:
 public:
     explicit IconsTabWidget(QString&& name = "", QWidget *parent = nullptr);
 
+    void Update() {updateTable(current_table);}
     QString GetName() { return name; }
 
 private:
