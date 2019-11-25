@@ -41,6 +41,9 @@ MainWindow::MainWindow(QWidget *parent)
     data_tab_widget = new DataTabWidget("Data", this);
     main_tab_widget->addTab(data_tab_widget, data_tab_widget->GetName());
 
+    icons_tab_widget = new IconsTabWidget("Icons", this);
+    main_tab_widget->addTab(icons_tab_widget, icons_tab_widget->GetName());
+
 
     main_tab_widget->show();
 }

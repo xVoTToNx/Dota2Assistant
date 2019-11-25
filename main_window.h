@@ -7,6 +7,7 @@
 
 
 #include "data_tab_widget.h"
+#include "icons_tab_widget.h"
 
 
 
@@ -27,6 +28,7 @@ public:
     QTabWidget* main_tab_widget;
 
     DataTabWidget* data_tab_widget;
+    IconsTabWidget* icons_tab_widget;
 
 
     MainWindow(QWidget *parent = nullptr);

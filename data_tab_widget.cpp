@@ -27,7 +27,16 @@ DataTabWidget::DataTabWidget(QString&& name, QWidget *parent)
 
     table_layout->addWidget(table_view);
 
-    layout->addLayout(table_layout);
+    QGroupBox* table_group = new QGroupBox(this);
+    table_group->setLayout(table_layout);
+    QSizePolicy spLeft(QSizePolicy::Preferred, QSizePolicy::Preferred);
+    spLeft.setHorizontalStretch(2);
+    table_group->setSizePolicy(spLeft);
+    layout->addWidget(table_group);
+
+    QSizePolicy spRight(QSizePolicy::Preferred, QSizePolicy::Preferred);
+    spRight.setHorizontalStretch(1);
+    filter_search_tab_widget->setSizePolicy(spRight);
     layout->addWidget(filter_search_tab_widget);
 
     connect(insert_button, &QPushButton::clicked, this, &DataTabWidget::insertRow);
@@ -35,9 +44,6 @@ DataTabWidget::DataTabWidget(QString&& name, QWidget *parent)
     table_combobox->setSizePolicy(QSizePolicy::Expanding, table_combobox->sizePolicy().verticalPolicy());
     table_combobox->addItems(MainWindow::data_base.tables());
     connect(table_combobox, &QComboBox::currentTextChanged, this, &DataTabWidget::changeTable);
-
-    test_model->setEditStrategy(QSqlTableModel::OnFieldChange);
-    test_model->select();
 
     filter_model->setSourceModel(test_model);
     filter_model->setDynamicSortFilter(false);

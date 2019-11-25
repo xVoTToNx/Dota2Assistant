@@ -19,6 +19,7 @@ DEFINES += QT_DEPRECATED_WARNINGS
 SOURCES += \
     data_tab_widget.cpp \
     filter_proxy_model.cpp \
+    icons_tab_widget.cpp \
     main.cpp \
     main_window.cpp \
     search_proxy_model.cpp
@@ -26,6 +27,7 @@ SOURCES += \
 HEADERS += \
     data_tab_widget.h \
     filter_proxy_model.h \
+    icons_tab_widget.h \
     main_window.h \
     search_proxy_model.h
 

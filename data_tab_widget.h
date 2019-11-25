@@ -16,6 +16,8 @@
 #include <QLineEdit>
 #include <QMessageBox>
 #include <QDateEdit>
+#include <QSlider>
+#include <QGroupBox>
 
 #include <functional>
 #include "filter_proxy_model.h"
