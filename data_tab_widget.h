@@ -18,7 +18,8 @@
 #include <QDateEdit>
 
 #include <functional>
-#include "sort_filter_proxy_model.h"
+#include "filter_proxy_model.h"
+#include "search_proxy_model.h"
 
 #define TY_QT_FOR_CHAR 34
 
@@ -30,7 +31,10 @@ public:
 
 private:
     QString name;
-    SortFilterProxyModel* sfp_model;
+
+    QTableView* table_view;
+    FilterProxyModel* filter_model;
+    SearchProxyModel* search_model;
     QSqlTableModel* test_model;
 
     QHBoxLayout* layout;
@@ -42,7 +46,6 @@ private:
                 QPushButton* insert_button;
                 QPushButton* remove_button;
 
-            QTableView* table_view;
 
         QTabWidget* filter_search_tab_widget;
             QWidget* filter_tab_widget;

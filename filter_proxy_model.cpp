@@ -1,12 +1,12 @@
-#include "sort_filter_proxy_model.h"
+#include "filter_proxy_model.h"
 
-SortFilterProxyModel::SortFilterProxyModel(QObject *parent)
+FilterProxyModel::FilterProxyModel(QObject *parent)
     : QSortFilterProxyModel(parent)
     , expressions(10)
 {
 }
 
-bool SortFilterProxyModel::filterAcceptsRow(int sourceRow, const QModelIndex &sourceParent) const
+bool FilterProxyModel::filterAcceptsRow(int sourceRow, const QModelIndex &sourceParent) const
 {
     bool isAccepted = true;
     for(size_t i = 0; i < sourceModel()->columnCount(); ++i)
@@ -17,17 +17,16 @@ bool SortFilterProxyModel::filterAcceptsRow(int sourceRow, const QModelIndex &so
         if(expressions[i].pattern() != "")
             isAccepted = isAccepted && str.contains(expressions[i]);
     }
-
     return isAccepted;
 }
 
-void SortFilterProxyModel::ClearExpressions()
+void FilterProxyModel::ClearExpressions()
 {
     for(auto i = expressions.begin(); i != expressions.end(); ++i)
         i->setPattern("");
 }
 
-void SortFilterProxyModel::setExpression(int column, const QString& exp)
+void FilterProxyModel::setExpression(int column, const QString& exp)
 {
     expressions[column].setPattern(exp);
     invalidateFilter();

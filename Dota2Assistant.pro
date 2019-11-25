@@ -18,14 +18,16 @@ DEFINES += QT_DEPRECATED_WARNINGS
 
 SOURCES += \
     data_tab_widget.cpp \
+    filter_proxy_model.cpp \
     main.cpp \
     main_window.cpp \
-    sort_filter_proxy_model.cpp
+    search_proxy_model.cpp
 
 HEADERS += \
     data_tab_widget.h \
+    filter_proxy_model.h \
     main_window.h \
-    sort_filter_proxy_model.h
+    search_proxy_model.h
 
 FORMS += \
     mainwindow.ui

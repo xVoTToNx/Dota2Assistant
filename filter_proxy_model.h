@@ -2,14 +2,19 @@
 #define SORTFILTERPROXYMODEL_H
 
 #include <QSortFilterProxyModel>
+#include <QTableView>
 #include <QDebug>
 
-class SortFilterProxyModel : public QSortFilterProxyModel
+class FilterProxyModel : public QSortFilterProxyModel
 {
     Q_OBJECT
 
+private:
+    QVector<QRegExp> expressions;
+
+
 public:
-    explicit SortFilterProxyModel(QObject* parent= nullptr);
+    explicit FilterProxyModel(QObject* parent= nullptr);
 
     bool filterAcceptsRow(int sourceRow, const QModelIndex &sourceParent) const  override;
     void ClearExpressions();
@@ -17,9 +22,6 @@ public:
 
 public slots:
     void setExpression(int column, const QString& exp);
-
-private:
-    QVector<QRegExp> expressions;
 };
 
 #endif // SORTFILTERPROXYMODEL_H
