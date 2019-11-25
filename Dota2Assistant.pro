@@ -17,6 +17,7 @@ DEFINES += QT_DEPRECATED_WARNINGS
 #DEFINES += QT_DISABLE_DEPRECATED_BEFORE=0x060000    # disables all the APIs deprecated before Qt 6.0.0
 
 SOURCES += \
+    Data/data_item_delegate.cpp \
     Data/data_tab_widget.cpp \
     Icons/hero_icon.cpp \
     Icons/icons_tab_widget.cpp \
@@ -28,6 +29,7 @@ SOURCES += \
     search_proxy_model.cpp
 
 HEADERS += \
+    Data/data_item_delegate.h \
     Data/data_tab_widget.h \
     Icons/hero_icon.h \
     Icons/icons_tab_widget.h \

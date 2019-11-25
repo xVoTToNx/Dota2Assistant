@@ -22,6 +22,7 @@
 #include <functional>
 #include "filter_proxy_model.h"
 #include "search_proxy_model.h"
+#include "data_item_delegate.h"
 
 #define TY_QT_FOR_CHAR 34
 

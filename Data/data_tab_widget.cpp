@@ -55,6 +55,8 @@ DataTabWidget::DataTabWidget(QString&& name, QWidget *parent)
     table_view->setModel(search_model);
     table_view->setSortingEnabled(true);
 
+    table_view->setItemDelegate(new DataItemDelegate(test_model, table_view));
+
     filter_tab_widget->setLayout(new QGridLayout());
     filter_search_tab_widget->addTab(filter_tab_widget, "Filter");
     search_tab_widget->setLayout(new QGridLayout());
@@ -236,7 +238,7 @@ void DataTabWidget::changeTable(const QString& table_name)
 {
     current_table = table_name;
     test_model->setTable(table_name);
-    test_model->setEditStrategy(QSqlTableModel::OnFieldChange);
+    test_model->setEditStrategy(QSqlTableModel::OnManualSubmit);
     test_model->select();
 
     changeFilterSearchTabs();

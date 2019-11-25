@@ -9,6 +9,7 @@
 #include <QPushButton>
 
 
+
 QSqlDatabase MainWindow::data_base = QSqlDatabase::addDatabase("QMYSQL");
 
 void MainWindow::ThrowError(QString &&text)
