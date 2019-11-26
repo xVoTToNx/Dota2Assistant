@@ -10,6 +10,7 @@
 #include "Icons/icons_tab_widget.h"
 
 #define HEADER(X, Y) X->headerData(Y, Qt::Horizontal, Qt::DisplayRole).toString()
+#define DATA_ROLE 66
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }

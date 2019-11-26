@@ -43,12 +43,13 @@ MainWindow::MainWindow(QWidget *parent)
     , ui(new Ui::MainWindow)
 
 {
+    qDebug()<<"Start Ctor";
+
     ui->setupUi(this);
     configureDB() ? qDebug()<<"Everything is OK."
                   : qDebug()<<QString(666, 'F');
 
 
-    qDebug()<<"Start MainWin";
     data_tab_widget = new DataTabWidget("Data", this);
     main_tab_widget->addTab(data_tab_widget, data_tab_widget->GetName());
     qDebug()<<"DataTab Finished";
@@ -69,8 +70,10 @@ MainWindow::MainWindow(QWidget *parent)
        }
     });
 
-
+    qDebug()<<"Everything's Ready";
     main_tab_widget->show();
+
+    qDebug()<<"End Ctor";
 }
 
 MainWindow::~MainWindow()

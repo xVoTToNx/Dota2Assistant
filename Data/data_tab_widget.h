@@ -19,6 +19,7 @@
 #include <QSlider>
 #include <QGroupBox>
 #include <QRadioButton>
+#include <QTextEdit>
 
 #include <functional>
 #include "filter_proxy_model.h"
@@ -40,7 +41,8 @@ private:
     QTableView* table_view;
     FilterProxyModel* filter_model;
     SearchProxyModel* search_model;
-    QSqlTableModel* test_model;
+    QSqlTableModel* model;
+    QSqlQueryModel* query_model;
 
     QHBoxLayout* layout;
 
@@ -50,6 +52,10 @@ private:
                 QComboBox* table_combobox;
                 QPushButton* insert_button;
                 QPushButton* remove_button;
+            QGridLayout* query_layout;
+                QTextEdit* query_edit;
+                QPushButton* exec_button;
+                QPushButton* clr_button;
 
 
         QTabWidget* filter_search_tab_widget;

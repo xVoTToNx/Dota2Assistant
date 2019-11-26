@@ -25,7 +25,7 @@ public:
     static ItemIcon* CreateMe(QString item_name);
 
 private:
-    void fillRecomendationsList(QString hero_name);
+    void fillRecomendationsList(QString item_name);
 };
 
 #endif // ITEMICON_H

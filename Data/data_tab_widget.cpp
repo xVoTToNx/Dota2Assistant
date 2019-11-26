@@ -8,7 +8,8 @@ DataTabWidget::DataTabWidget(QString&& name, QWidget *parent)
     , table_view (new QTableView(this))
     , filter_model (new FilterProxyModel(this))
     , search_model (new SearchProxyModel(table_view, this))
-    , test_model (new QSqlTableModel(this, MainWindow::data_base))
+    , model (new QSqlTableModel(this, MainWindow::data_base))
+    , query_model (new QSqlQueryModel(this))
     , layout (new QHBoxLayout(this))
     , table_layout (new QVBoxLayout())
     , table_button_layout (new QHBoxLayout())
@@ -16,6 +17,10 @@ DataTabWidget::DataTabWidget(QString&& name, QWidget *parent)
     , table_combobox (new QComboBox(this))
     , insert_button (new QPushButton("INSERT", this))
     , remove_button (new QPushButton("REMOVE", this))
+    , query_layout (new QGridLayout())
+    , query_edit (new QTextEdit(this))
+    , exec_button (new QPushButton("EXEC", this))
+    , clr_button (new QPushButton("CLR", this))
     , filter_search_tab_widget(new QTabWidget(this))
     , filter_tab_widget(new QWidget(this))
     , search_tab_widget(new QWidget(this))
@@ -27,6 +32,13 @@ DataTabWidget::DataTabWidget(QString&& name, QWidget *parent)
     table_button_layout->addWidget(remove_button);
 
     table_layout->addWidget(table_view);
+    table_layout->addLayout(query_layout);
+
+    query_layout->addWidget(query_edit, 0, 0, 2, 1);
+    query_edit->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+    query_edit->setWordWrapMode(QTextOption::WrapMode::WordWrap);
+    query_layout->addWidget(exec_button, 0, 1);
+    query_layout->addWidget(clr_button, 1, 1);
 
     QGroupBox* table_group = new QGroupBox(this);
     table_group->setLayout(table_layout);
@@ -40,6 +52,23 @@ DataTabWidget::DataTabWidget(QString&& name, QWidget *parent)
     filter_search_tab_widget->setSizePolicy(spRight);
     layout->addWidget(filter_search_tab_widget);
 
+    connect(exec_button, &QPushButton::clicked, [this](){
+        QSqlQuery qry(MainWindow::data_base);
+        qry.prepare(query_edit->toPlainText());
+        if(!qry.exec())
+        {
+            MainWindow::ThrowError("Your query is... is.. is wrong! ＞︿＜");
+            return;
+        }
+        query_model->setQuery(QSqlQuery(qry));
+        filter_model->setSourceModel(query_model);
+        changeFilterSearchTabs();
+    });
+    connect(clr_button, &QPushButton::clicked, [this](){
+        query_edit->setText(""); changeTable(current_table);
+        filter_model->setSourceModel(model);
+        changeFilterSearchTabs();
+    });
     connect(insert_button, &QPushButton::clicked, this, &DataTabWidget::insertRow);
     connect(remove_button, &QPushButton::clicked, this, &DataTabWidget::removeRow);
     table_combobox->setSizePolicy(QSizePolicy::Expanding, table_combobox->sizePolicy().verticalPolicy());
@@ -47,7 +76,7 @@ DataTabWidget::DataTabWidget(QString&& name, QWidget *parent)
     table_combobox->setCurrentText("heroes");
     connect(table_combobox, &QComboBox::currentTextChanged, this, &DataTabWidget::changeTable);
 
-    filter_model->setSourceModel(test_model);
+    filter_model->setSourceModel(model);
     filter_model->setDynamicSortFilter(false);
 
     search_model->setSourceModel(filter_model);
@@ -56,7 +85,7 @@ DataTabWidget::DataTabWidget(QString&& name, QWidget *parent)
     table_view->setModel(search_model);
     table_view->setSortingEnabled(true);
 
-    table_view->setItemDelegate(new DataItemDelegate(test_model, table_view));
+    table_view->setItemDelegate(new DataItemDelegate(model, table_view));
 
     filter_tab_widget->setLayout(new QGridLayout());
     filter_search_tab_widget->addTab(filter_tab_widget, "Filter");
@@ -71,7 +100,7 @@ void DataTabWidget::insertRow()
 {
     bool was_closed = true;
 
-    QString query_test = "INSERT INTO " + test_model->tableName() + " VALUES (";
+    QString query_test = "INSERT INTO " + model->tableName() + " VALUES (";
     QDialog* dialog = new QDialog(this);
     QVBoxLayout* layout = new QVBoxLayout();
 
@@ -88,7 +117,7 @@ void DataTabWidget::insertRow()
         {
             if(edit->text() == "") return;
             query_test += " '" + edit->text() + "',";
-            for(size_t i = 1; i < test_model->columnCount() - 1; ++i)
+            for(size_t i = 1; i < model->columnCount() - 1; ++i)
                 query_test += " DEFAULT,";
             query_test += " DEFAULT )";
 
@@ -107,7 +136,7 @@ void DataTabWidget::insertRow()
         {
             if(edit_skill->text() == "") return;
             query_test += " '" + edit_skill->text() + "', DEFAULT, '" + edit_hero->text() + "',";
-            for(size_t i = 3; i < test_model->columnCount() - 1; ++i)
+            for(size_t i = 3; i < model->columnCount() - 1; ++i)
                 query_test += " DEFAULT,";
             query_test += " DEFAULT )";
 
@@ -123,7 +152,7 @@ void DataTabWidget::insertRow()
         {
             if(edit_item->text() == "") return;
             query_test += " '" + edit_item->text() + "',";
-            for(size_t i = 1; i < test_model->columnCount() - 1; ++i)
+            for(size_t i = 1; i < model->columnCount() - 1; ++i)
                 query_test += " DEFAULT,";
             query_test += " DEFAULT )";
 
@@ -148,7 +177,7 @@ void DataTabWidget::insertRow()
                 query_test += "true, ";
             else
                 query_test += "false, ";
-            for(size_t i = 3; i < test_model->columnCount() - 1; ++i)
+            for(size_t i = 3; i < model->columnCount() - 1; ++i)
                 query_test += " DEFAULT,";
             query_test += " DEFAULT )";
 
@@ -164,7 +193,7 @@ void DataTabWidget::insertRow()
         {
             if(edit_role->text() == "") return;
             query_test += " '" + edit_role->text() + "',";
-            for(size_t i = 1; i < test_model->columnCount() - 1; ++i)
+            for(size_t i = 1; i < model->columnCount() - 1; ++i)
                 query_test += " DEFAULT,";
             query_test += " DEFAULT )";
 
@@ -182,7 +211,7 @@ void DataTabWidget::insertRow()
         connect(button, &QPushButton::clicked, [&query_test, this, edit_hero, edit_role, &was_closed]()
         {
             query_test += " '" + edit_hero->text() + "', '" + edit_role->text() + "',";
-            for(size_t i = 2; i < test_model->columnCount() - 1; ++i)
+            for(size_t i = 2; i < model->columnCount() - 1; ++i)
                 query_test += " DEFAULT,";
             query_test += " DEFAULT )";
 
@@ -198,7 +227,7 @@ void DataTabWidget::insertRow()
         {
             if(edit_team->text() == "") return;
             query_test += " '" + edit_team->text() + "',";
-            for(size_t i = 1; i < test_model->columnCount() - 1; ++i)
+            for(size_t i = 1; i < model->columnCount() - 1; ++i)
                 query_test += " DEFAULT,";
             query_test += " DEFAULT )";
 
@@ -230,7 +259,7 @@ void DataTabWidget::insertRow()
 
     if(!qry.exec())
         MainWindow::ThrowError("Something went wrong... Sooorry...<( _ _ )>");
-    changeTable(test_model->tableName());
+    changeTable(model->tableName());
 }
 
 void DataTabWidget::removeRow()
@@ -243,23 +272,23 @@ void DataTabWidget::removeRow()
 
             if(answer == QMessageBox::Yes)
             {
-                QString query_text = "delete from " + test_model->tableName() + " where ";
+                QString query_text = "delete from " + model->tableName() + " where ";
                 size_t i = 0;
-                for(; i < test_model->columnCount() - 1; ++i)
+                for(; i < model->columnCount() - 1; ++i)
                 {
-                    QVariant value = test_model->data(test_model->index(index.row(), i));
+                    QVariant value = model->data(model->index(index.row(), i));
                     if(value.type() == QVariant::Type::DateTime)
                         continue;
                     QString str_value = value.type() == QVariant::Type::String ?
                                         "'" + value.toString() + "'" : value.toString();
-                    query_text += HEADER(test_model, i) + " = " + str_value + " AND ";
+                    query_text += HEADER(model, i) + " = " + str_value + " AND ";
                 }
-                query_text += HEADER(test_model, i) + " = " + test_model->data(test_model->index(index.row(), i)).toString();
+                query_text += HEADER(model, i) + " = " + model->data(model->index(index.row(), i)).toString();
                 QSqlQuery qry;
                 qry.prepare(query_text);
                 qry.exec();
 
-                changeTable(test_model->tableName());
+                changeTable(model->tableName());
             }
             return;
         }
@@ -279,132 +308,132 @@ void DataTabWidget::changeFilterSearchTabs()
     filter_model->ClearExpressions();
     search_model->ClearExpressions();
 
-    auto record = test_model->record(0);
-    if(!record.isEmpty())
-        for( size_t i = 0; i < record.count(); ++i)
-        {
-            filter_layout->addWidget(new QLabel(test_model->headerData(i, Qt::Horizontal, Qt::DisplayRole).toString()), i, 0);
-            QWidget* widget = nullptr;
-            auto func = std::bind(&FilterProxyModel::setExpression, filter_model, i,std::placeholders::_1);
+    QSqlQueryModel* current_model = static_cast<QSqlQueryModel*>(table_view->model());
 
-            switch (record.field(i).type())
-            {
-                case QVariant::Type::Int:
-                {
-                    widget = new QSpinBox();
-                    connect(static_cast<QSpinBox*>(widget), QOverload<const QString&>::of(&QSpinBox::valueChanged), func);
-                    break;
-                }
-
-                case QVariant::Type::String:
-                {
-                    widget = new QLineEdit();
-                    connect(static_cast<QLineEdit*>(widget), &QLineEdit::textChanged, func);
-                    break;
-                }
-
-                case TY_QT_FOR_CHAR:
-                {
-                    widget = new QSpinBox();
-                    connect(static_cast<QSpinBox*>(widget), QOverload<const QString&>::of(&QSpinBox::valueChanged), func);
-                    break;
-                }
-
-                case QVariant::Type::Date:
-                {
-                    widget = new QDateEdit();
-                    connect(static_cast<QDateEdit*>(widget), &QDateEdit::dateChanged, [this, i]( const QDate &date)
-                    {
-                        QString month_zero = date.month() > 9 ? "" : "0";
-                        QString day_zero = date.day() > 9 ? "" : "0";
-                        this->filter_model->setExpression(i, QString::number(date.year()) + '-' +
-                        month_zero + QString::number(date.month()) + '-' +
-                        day_zero + QString::number(date.day()));
-                    });
-                    break;
-                }
-            }
-
-            if(widget != nullptr)
-            {
-                filter_layout->addWidget(widget, i, 1);
-
-                QPushButton* clearButton = new QPushButton("CLR");
-                filter_layout->addWidget(clearButton, i, 2);
-                connect(clearButton, &QPushButton::clicked, [this, i](){this->filter_model->setExpression(i, "");});
-            }
-        }
-
-    if(!record.isEmpty())
+    for( size_t i = 0; i < current_model->columnCount(); ++i)
     {
-        size_t i = 0;
-        for(; i < record.count(); ++i)
+        filter_layout->addWidget(new QLabel(current_model->headerData(i, Qt::Horizontal, Qt::DisplayRole).toString()), i, 0);
+        QWidget* widget = nullptr;
+        auto func = std::bind(&FilterProxyModel::setExpression, filter_model, i,std::placeholders::_1);
+
+        switch (current_model->data(current_model->index(0, i)).type())
         {
-            search_layout->addWidget(new QLabel(test_model->headerData(i, Qt::Horizontal, Qt::DisplayRole).toString()), i, 0);
-            QWidget* widget = nullptr;
-            auto func = std::bind(&SearchProxyModel::setExpression, search_model, i,std::placeholders::_1);
-
-            switch (record.field(i).type())
+            case QVariant::Type::Int:
+            case QVariant::Type::Double:
             {
-                case QVariant::Type::Int:
-                {
-                    widget = new QSpinBox();
-                    connect(static_cast<QSpinBox*>(widget), QOverload<const QString&>::of(&QSpinBox::valueChanged), func);
-                    break;
-                }
-
-                case QVariant::Type::String:
-                {
-                    widget = new QLineEdit();
-                    connect(static_cast<QLineEdit*>(widget), &QLineEdit::textChanged, func);
-                    break;
-                }
-
-                case TY_QT_FOR_CHAR:
-                {
-                    widget = new QSpinBox();
-                    connect(static_cast<QSpinBox*>(widget), QOverload<const QString&>::of(&QSpinBox::valueChanged), func);
-                    break;
-                }
-
-                case QVariant::Type::Date:
-                {
-                    widget = new QDateEdit();
-                    connect(static_cast<QDateEdit*>(widget), &QDateEdit::dateChanged, [this, i]( const QDate &date)
-                    {
-                        QString month_zero = date.month() > 9 ? "" : "0";
-                        QString day_zero = date.day() > 9 ? "" : "0";
-                        this->search_model->setExpression(i, QString::number(date.year()) + '-' +
-                        month_zero + QString::number(date.month()) + '-' +
-                        day_zero + QString::number(date.day()));
-                    });
-                    break;
-                }
+                widget = new QSpinBox();
+                connect(static_cast<QSpinBox*>(widget), QOverload<const QString&>::of(&QSpinBox::valueChanged), func);
+                break;
             }
 
-            if(widget != nullptr)
+            case QVariant::Type::String:
             {
-                search_layout->addWidget(widget, i, 1);
-
-                QPushButton* clearButton = new QPushButton("CLR");
-                search_layout->addWidget(clearButton, i, 2);
-                connect(clearButton, &QPushButton::clicked, [this, i](){this->search_model->setExpression(i, "");});
+                widget = new QLineEdit();
+                connect(static_cast<QLineEdit*>(widget), &QLineEdit::textChanged, func);
+                break;
             }
 
+            case TY_QT_FOR_CHAR:
+            {
+                widget = new QSpinBox();
+                connect(static_cast<QSpinBox*>(widget), QOverload<const QString&>::of(&QSpinBox::valueChanged), func);
+                break;
+            }
+
+            case QVariant::Type::Date:
+            {
+                widget = new QDateEdit();
+                connect(static_cast<QDateEdit*>(widget), &QDateEdit::dateChanged, [this, i]( const QDate &date)
+                {
+                    QString month_zero = date.month() > 9 ? "" : "0";
+                    QString day_zero = date.day() > 9 ? "" : "0";
+                    this->filter_model->setExpression(i, QString::number(date.year()) + '-' +
+                    month_zero + QString::number(date.month()) + '-' +
+                    day_zero + QString::number(date.day()));
+                });
+                break;
+            }
         }
 
-        QPushButton* searchButton = new QPushButton("CLR");
-        search_layout->addWidget(searchButton, i, 0, 1, 3);
-        connect(searchButton, &QPushButton::clicked, [this](){this->search_model->Search();});
+        if(widget != nullptr)
+        {
+            filter_layout->addWidget(widget, i, 1);
+
+            QPushButton* clearButton = new QPushButton("CLR");
+            filter_layout->addWidget(clearButton, i, 2);
+            connect(clearButton, &QPushButton::clicked, [this, i](){this->filter_model->setExpression(i, "");});
+        }
     }
+
+
+    size_t i = 0;
+    for(; i < current_model->columnCount(); ++i)
+    {
+        search_layout->addWidget(new QLabel(current_model->headerData(i, Qt::Horizontal, Qt::DisplayRole).toString()), i, 0);
+        QWidget* widget = nullptr;
+        auto func = std::bind(&SearchProxyModel::setExpression, search_model, i,std::placeholders::_1);
+
+        switch (current_model->data(current_model->index(0, i)).type())
+        {
+            case QVariant::Type::Int:
+            case QVariant::Type::Double:
+            {
+                widget = new QSpinBox();
+                connect(static_cast<QSpinBox*>(widget), QOverload<const QString&>::of(&QSpinBox::valueChanged), func);
+                break;
+            }
+
+            case QVariant::Type::String:
+            {
+                widget = new QLineEdit();
+                connect(static_cast<QLineEdit*>(widget), &QLineEdit::textChanged, func);
+                break;
+            }
+
+            case TY_QT_FOR_CHAR:
+            {
+                widget = new QSpinBox();
+                connect(static_cast<QSpinBox*>(widget), QOverload<const QString&>::of(&QSpinBox::valueChanged), func);
+                break;
+            }
+
+            case QVariant::Type::Date:
+            {
+                widget = new QDateEdit();
+                connect(static_cast<QDateEdit*>(widget), &QDateEdit::dateChanged, [this, i]( const QDate &date)
+                {
+                    QString month_zero = date.month() > 9 ? "" : "0";
+                    QString day_zero = date.day() > 9 ? "" : "0";
+                    this->search_model->setExpression(i, QString::number(date.year()) + '-' +
+                    month_zero + QString::number(date.month()) + '-' +
+                    day_zero + QString::number(date.day()));
+                });
+                break;
+            }
+        }
+
+        if(widget != nullptr)
+        {
+            search_layout->addWidget(widget, i, 1);
+
+            QPushButton* clearButton = new QPushButton("CLR");
+            search_layout->addWidget(clearButton, i, 2);
+            connect(clearButton, &QPushButton::clicked, [this, i](){this->search_model->setExpression(i, "");});
+        }
+
+    }
+
+    QPushButton* searchButton = new QPushButton("CLR");
+    search_layout->addWidget(searchButton, i, 0, 1, 3);
+    connect(searchButton, &QPushButton::clicked, [this](){this->search_model->Search();});
 }
 
 void DataTabWidget::changeTable(const QString& table_name)
 {
     current_table = table_name;
-    test_model->setTable(table_name);
-    test_model->setEditStrategy(QSqlTableModel::OnManualSubmit);;
-    test_model->select();
+    model->setTable(table_name);
+    model->setEditStrategy(QSqlTableModel::OnManualSubmit);;
+    model->select();
 
     changeFilterSearchTabs();
 }

@@ -125,8 +125,8 @@ void IconsTabWidget::updateTable(Icon icon)
                 icon->show(); });
             break;
         case Icon::team:
-            connect(button, &QPushButton::clicked, [](){
-                auto icon = TeamIcon::CreateMe();
+            connect(button, &QPushButton::clicked, [data](){
+                auto icon = TeamIcon::CreateMe(data);
                 icon->setAttribute(Qt::WA_DeleteOnClose);
                 icon->show(); });
             break;
