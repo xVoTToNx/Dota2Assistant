@@ -8,6 +8,8 @@
 #include <QLineEdit>
 #include <QTabWidget>
 #include <QSqlTableModel>
+#include <QPicture>
+#include <QToolButton>
 
 
 

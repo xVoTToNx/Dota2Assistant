@@ -2,7 +2,7 @@
 
 FilterProxyModel::FilterProxyModel(QObject *parent)
     : QSortFilterProxyModel(parent)
-    , expressions(10)
+    , expressions(15)
 {
 }
 

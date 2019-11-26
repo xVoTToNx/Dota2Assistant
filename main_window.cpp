@@ -39,12 +39,13 @@ MainWindow::MainWindow(QWidget *parent)
                   : qDebug()<<QString(666, 'F');
 
 
+    qDebug()<<"Start MainWin";
     data_tab_widget = new DataTabWidget("Data", this);
     main_tab_widget->addTab(data_tab_widget, data_tab_widget->GetName());
-
+    qDebug()<<"DataTab Finished";
     icons_tab_widget = new IconsTabWidget("Icons", this);
     main_tab_widget->addTab(icons_tab_widget, icons_tab_widget->GetName());
-
+    qDebug()<<"IconTab Finished";
 
     connect(main_tab_widget, &QTabWidget::currentChanged, [this](int index)
     {

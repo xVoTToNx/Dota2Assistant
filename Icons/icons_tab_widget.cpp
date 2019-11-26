@@ -10,10 +10,10 @@ IconsTabWidget::IconsTabWidget(QString&& name, QWidget *parent)
     , model (new QSqlTableModel(this, MainWindow::data_base))
     , filter_model(new FilterProxyModel(this))
     , main_layout (new QHBoxLayout(this))
-    , button_layout (new QVBoxLayout(this))
-    , table_layout (new QVBoxLayout(this))
-    , another_another_layout (new QHBoxLayout(this))
-    , icons_layout (new QGridLayout(this))
+    , button_layout (new QVBoxLayout())
+    , table_layout (new QVBoxLayout())
+    , another_another_layout (new QHBoxLayout())
+    , icons_layout (new QGridLayout())
     , clear_button (new QPushButton("CLR", this))
     , search_line_edit (new QLineEdit(this))
 {
@@ -65,13 +65,13 @@ void IconsTabWidget::updateTable(Icon icon)
     switch(icon)
     {
     case Icon::hero:
-        table_name = "test";
+        table_name = "heroes";
         break;
     case Icon::item:
-        table_name = "test2";
+        table_name = "items";
         break;
     case Icon::team:
-        table_name = "testc";
+        table_name = "teams";
         break;
     }
 
@@ -87,9 +87,26 @@ void IconsTabWidget::updateTable(Icon icon)
 
     for(size_t i = 0; i < filter_model->rowCount(); ++i)
     {
-        QVariant data = filter_model->data(filter_model->index(i,0));
-        QPushButton* button = new QPushButton(data.toString());
+        QString data = filter_model->data(filter_model->index(i,0)).toString();
+        QString icon_path = filter_model->data(filter_model->index(i, 1)).toString();
+        QToolButton* button = new QToolButton();
+        button->setToolButtonStyle(Qt::ToolButtonTextUnderIcon);
+
         button->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+        QVBoxLayout* button_icon_layout = new QVBoxLayout(button);
+        QLabel* name = new QLabel(data, button);
+        name->setAlignment(Qt::AlignCenter);
+        name->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Minimum);
+        QIcon icon_icon(icon_path);
+
+        if(!icon_icon.isNull())
+        {
+            button->setIcon(icon_icon);
+            button->setIconSize({200,150});
+        }
+
+        button_icon_layout->addWidget(name);
+        button_icon_layout->setAlignment(Qt::AlignHCenter);
 
         // Switch coonect to different creation window func
         // Use query

@@ -6,7 +6,7 @@ SearchProxyModel::SearchProxyModel(QTableView* view, QObject *parent)
     , start_row (new int(-1))
     , current_row (new int(-1))
     , go_next(new bool(false))
-    , expressions(10)
+    , expressions(15)
 {
 }
 

@@ -18,6 +18,7 @@
 #include <QDateEdit>
 #include <QSlider>
 #include <QGroupBox>
+#include <QRadioButton>
 
 #include <functional>
 #include "filter_proxy_model.h"
