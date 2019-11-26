@@ -230,7 +230,6 @@ void DataTabWidget::insertRow()
 
     if(!qry.exec())
         MainWindow::ThrowError("Something went wrong... Sooorry...<( _ _ )>");
-    qDebug()<<qry.lastQuery();
     changeTable(test_model->tableName());
 }
 

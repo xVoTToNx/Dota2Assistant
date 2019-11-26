@@ -12,6 +12,15 @@
 
 QSqlDatabase MainWindow::data_base = QSqlDatabase::addDatabase("QMYSQL");
 
+QLabel* MainWindow::CreateLabel(QString text)
+{
+    QLabel* label = new QLabel(text);
+    label->setAlignment(Qt::AlignCenter);
+    label->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+
+    return label;
+}
+
 void MainWindow::ThrowError(QString &&text)
 {
     QMessageBox box;

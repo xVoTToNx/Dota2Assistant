@@ -15,7 +15,7 @@ bool FilterProxyModel::filterAcceptsRow(int sourceRow, const QModelIndex &source
         QString str = sourceModel()->data(index).toString();
 
         if(expressions[i].pattern() != "")
-            isAccepted = isAccepted && str.contains(expressions[i]);
+            isAccepted = isAccepted && str.toLower().contains(expressions[i]);
     }
     return isAccepted;
 }
@@ -28,6 +28,6 @@ void FilterProxyModel::ClearExpressions()
 
 void FilterProxyModel::setExpression(int column, const QString& exp)
 {
-    expressions[column].setPattern(exp);
+    expressions[column].setPattern(exp.toLower());
     invalidateFilter();
 }

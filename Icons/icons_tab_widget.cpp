@@ -95,7 +95,7 @@ void IconsTabWidget::updateTable(Icon icon)
         button->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
         QVBoxLayout* button_icon_layout = new QVBoxLayout(button);
         QLabel* name = new QLabel(data, button);
-        name->setAlignment(Qt::AlignCenter);
+        name->setAlignment(Qt::AlignCenter | Qt::AlignBottom);
         name->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Minimum);
         QIcon icon_icon(icon_path);
 
@@ -113,8 +113,8 @@ void IconsTabWidget::updateTable(Icon icon)
         switch(icon)
         {
         case Icon::hero:
-            connect(button, &QPushButton::clicked, [](){
-                auto icon = HeroIcon::CreateMe();
+            connect(button, &QPushButton::clicked, [data](){
+                auto icon = HeroIcon::CreateMe(data);
                 icon->setAttribute(Qt::WA_DeleteOnClose);
                 icon->show(); });
             break;

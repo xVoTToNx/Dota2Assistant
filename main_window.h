@@ -24,6 +24,7 @@ public:
     static QSqlDatabase data_base;
     static void ThrowError(QString&& text);
     static int ThrowQuestion(QString &&text);
+    static QLabel* CreateLabel(QString text);
 
     QTabWidget* main_tab_widget;
 

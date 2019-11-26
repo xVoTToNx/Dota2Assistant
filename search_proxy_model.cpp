@@ -20,7 +20,7 @@ bool SearchProxyModel::filterAcceptsRow(int sourceRow, const QModelIndex &source
         QString str = sourceModel()->data(index).toString();
 
         if(expressions[i].pattern() != "")
-            isAccepted = isAccepted && str.contains(expressions[i]);
+            isAccepted = isAccepted && str.toLower().contains(expressions[i]);
     }
 
     if(isAccepted && *start_row == -1)
@@ -53,7 +53,7 @@ void SearchProxyModel::ClearExpressions()
 
 void SearchProxyModel::setExpression(int column, const QString& exp)
 {
-    expressions[column].setPattern(exp);
+    expressions[column].setPattern(exp.toLower());
 }
 
 void SearchProxyModel::Search()
