@@ -9,8 +9,6 @@ HeroIcon::HeroIcon(QString hero_name, QWidget *parent)
     , data_layout (new QGridLayout())
     , skills_list (new QListWidget())
 {
-    //setFixedSize({700, 800});
-
     QSqlQuery qry(MainWindow::data_base);
     qry.prepare(QString("select * from heroes where hero_name = '" + hero_name + "'"));
     qry.exec(); qry.next();
@@ -98,7 +96,6 @@ void HeroIcon::fillSkillsList(QString hero_name)
 
         QListWidgetItem* item = new QListWidgetItem();
         item->setSizeHint({400, 120});
-        //skill->setFixedSize({skills_list->width(), 100});
         skills_list->addItem(item);
         skills_list->setItemWidget(item, skill);
     }

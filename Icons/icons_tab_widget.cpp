@@ -119,8 +119,8 @@ void IconsTabWidget::updateTable(Icon icon)
                 icon->show(); });
             break;
         case Icon::item:
-            connect(button, &QPushButton::clicked, [](){
-                auto icon = ItemIcon::CreateMe();
+            connect(button, &QPushButton::clicked, [data](){
+                auto icon = ItemIcon::CreateMe(data);
                 icon->setAttribute(Qt::WA_DeleteOnClose);
                 icon->show(); });
             break;
