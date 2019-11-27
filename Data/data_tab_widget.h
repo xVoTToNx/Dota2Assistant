@@ -21,6 +21,9 @@
 #include <QRadioButton>
 #include <QTextEdit>
 
+#include <QFileDialog>
+#include <QPrinter>
+
 #include <functional>
 #include "filter_proxy_model.h"
 #include "search_proxy_model.h"
@@ -37,6 +40,7 @@ public:
 private:
     QString name;
     QString current_table;
+    bool is_custom_query;
 
     QTableView* table_view;
     FilterProxyModel* filter_model;
@@ -52,6 +56,7 @@ private:
                 QComboBox* table_combobox;
                 QPushButton* insert_button;
                 QPushButton* remove_button;
+                QPushButton* print_button;
             QGridLayout* query_layout;
                 QTextEdit* query_edit;
                 QPushButton* exec_button;
@@ -71,6 +76,7 @@ public:
 private:
     void insertRow();
     void removeRow();
+    void printTable();
     void changeFilterSearchTabs();
 
 private slots:

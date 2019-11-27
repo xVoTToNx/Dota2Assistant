@@ -1,5 +1,6 @@
 QT       += core gui
 QT       += sql
+QT       += printsupport
 
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 
@@ -26,6 +27,8 @@ SOURCES += \
     filter_proxy_model.cpp \
     main.cpp \
     main_window.cpp \
+    qcpdocumentobject.cpp \
+    qcustomplot.cpp \
     search_proxy_model.cpp
 
 HEADERS += \
@@ -37,6 +40,8 @@ HEADERS += \
     Icons/team_icon.h \
     filter_proxy_model.h \
     main_window.h \
+    qcpdocumentobject.h \
+    qcustomplot.h \
     search_proxy_model.h
 
 FORMS += \

@@ -5,6 +5,7 @@ DataTabWidget::DataTabWidget(QString&& name, QWidget *parent)
     : QWidget(parent)
     , name(name)
     , current_table("heroes")
+    , is_custom_query(false)
     , table_view (new QTableView(this))
     , filter_model (new FilterProxyModel(this))
     , search_model (new SearchProxyModel(table_view, this))
@@ -17,6 +18,7 @@ DataTabWidget::DataTabWidget(QString&& name, QWidget *parent)
     , table_combobox (new QComboBox(this))
     , insert_button (new QPushButton("INSERT", this))
     , remove_button (new QPushButton("REMOVE", this))
+    , print_button (new QPushButton("PRINT", this))
     , query_layout (new QGridLayout())
     , query_edit (new QTextEdit(this))
     , exec_button (new QPushButton("EXEC", this))
@@ -30,6 +32,7 @@ DataTabWidget::DataTabWidget(QString&& name, QWidget *parent)
     table_button_layout->addWidget(table_combobox);
     table_button_layout->addWidget(insert_button);
     table_button_layout->addWidget(remove_button);
+    table_button_layout->addWidget(print_button);
 
     table_layout->addWidget(table_view);
     table_layout->addLayout(query_layout);
@@ -63,14 +66,17 @@ DataTabWidget::DataTabWidget(QString&& name, QWidget *parent)
         query_model->setQuery(QSqlQuery(qry));
         filter_model->setSourceModel(query_model);
         changeFilterSearchTabs();
+        is_custom_query = true;
     });
     connect(clr_button, &QPushButton::clicked, [this](){
         query_edit->setText(""); changeTable(current_table);
         filter_model->setSourceModel(model);
         changeFilterSearchTabs();
+        is_custom_query = false;
     });
     connect(insert_button, &QPushButton::clicked, this, &DataTabWidget::insertRow);
     connect(remove_button, &QPushButton::clicked, this, &DataTabWidget::removeRow);
+    connect(print_button, &QPushButton::clicked, this, &DataTabWidget::printTable);
     table_combobox->setSizePolicy(QSizePolicy::Expanding, table_combobox->sizePolicy().verticalPolicy());
     table_combobox->addItems(MainWindow::data_base.tables());
     table_combobox->setCurrentText("heroes");
@@ -293,6 +299,59 @@ void DataTabWidget::removeRow()
             return;
         }
     MainWindow::ThrowError("Invalid row. Sorry /(ㄒoㄒ)/~~");
+}
+
+void DataTabWidget::printTable()
+{
+    QString fileName = QFileDialog::getSaveFileName(nullptr, "Export PDF", QString(), "*.pdf");
+    if (QFileInfo(fileName).suffix().isEmpty()) { fileName.append(".pdf"); }
+    QPrinter printer(QPrinter::PrinterResolution);
+    printer.setOutputFormat(QPrinter::NativeFormat);
+    printer.setPaperSize(QPrinter::A4);
+    printer.setOrientation(QPrinter::Orientation::Landscape);
+    printer.setOutputFileName(fileName);
+
+    QString title = is_custom_query ? "data" : current_table;
+    title[0] = title[0].toUpper();
+
+    QString str;
+    QTextStream out(&str);
+    const int rowCount = table_view->model()->rowCount();
+    const int columnCount = table_view->model()->columnCount();
+    out <<  "<html>\n<head>\n <meta Content=\"Text/html; charset=Windows-936\">\n"
+        <<  QString("<title>%1</title>\n").arg("Dota 2 Assistant : " + title)
+        <<  "</head>\n"
+            "<body bgcolor=#ffffff link=#5000A0>\n"
+            "<table border=1 cellspacing=0 cellpadding=2>\n";
+    // headers
+    out << "<center><h1>Dota 2 Assistance</h1>"
+        << "<p><h4>" + title + "</h4></p><p>&nbsp;</p>";
+    out << "<tr bgcolor=#f0f0f0>";
+    for (int column = 0; column < columnCount; column++)
+        if (!table_view->isColumnHidden(column))
+            out << QString("<th>%1</th>").arg(table_view->model()->headerData(column, Qt::Horizontal).toString());
+    out << "</tr>\n";
+    // data table
+    for (int row = 0; row < rowCount; row++)
+    {
+        out << "<tr>";
+        for (int column = 0; column < columnCount; column++)
+        {
+            if (!table_view->isColumnHidden(column))
+            {
+                QString data = table_view->model()->data(table_view->model()->index(row, column)).toString().simplified();
+                out << QString("<td bkcolor=0>%1</td>").arg((!data.isEmpty()) ? data : QString(" "));
+            }
+        }out << "</tr>\n";
+    }out <<  "</table></center>";
+    out <<"<p>&nbsp;</p><p>&nbsp;</p><div style=\"position: absolute; bottom: 5px; align-content: right; \">"
+        <<"Creation date: " << QDate::currentDate().toString("dd.MM.yyyy")
+        <<"</div>"
+        <<"</body>\n</html>\n";
+    QTextDocument doc;
+    doc.setHtml(str);
+    doc.setPageSize(printer.pageRect().size()); // This is necessary if you want to hide the page number
+    doc.print(&printer);
 }
 
 void DataTabWidget::changeFilterSearchTabs()

@@ -10,6 +10,10 @@
 #include <QDebug>
 #include <QListWidget>
 
+#include "qcustomplot.h"
+#include "qcpdocumentobject.h"
+#include <functional>
+
 class TeamIcon : public QWidget
 {
     Q_OBJECT
@@ -25,6 +29,7 @@ public:
 
 private:
     void fillHeroesList(QString team_name);
+    void createTeamStats(QString team_name);
 };
 
 #endif // TEAMICON_H

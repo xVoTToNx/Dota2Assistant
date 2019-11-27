@@ -102,7 +102,7 @@ void IconsTabWidget::updateTable(Icon icon)
         if(!icon_icon.isNull())
         {
             button->setIcon(icon_icon);
-            button->setIconSize({200,150});
+            button->setIconSize({150,150});
         }
 
         button_icon_layout->addWidget(name);
