@@ -244,7 +244,11 @@ void AlgorTabWidget::updateTable(QString team_name)
 
 void AlgorTabWidget::CLR()
 {
+    QSqlQuery qry;
+    qry.prepare("delete from team_heroes where team_name = '" + current_team + "'");
+    qry.exec();
 
+    Update();
 }
 
 void AlgorTabWidget::MAGIC()
@@ -338,9 +342,7 @@ void AlgorTabWidget::MAGIC()
         if(qry.exec())
         {
             ++i;
-            qDebug()<<"SSSSS";
         }
-        qDebug()<<qry.lastQuery();
 
         if(j > qry.exec() * 3)
             break;

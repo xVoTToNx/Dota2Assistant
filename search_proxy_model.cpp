@@ -5,6 +5,7 @@ SearchProxyModel::SearchProxyModel(QTableView* view, QObject *parent)
     , view (view)
     , start_row (new int(-1))
     , current_row (new int(-1))
+    , current_current_row (new int(-1))
     , go_next(new bool(false))
     , expressions(15)
 {
@@ -22,6 +23,9 @@ bool SearchProxyModel::filterAcceptsRow(int sourceRow, const QModelIndex &source
         if(expressions[i].pattern() != "")
             isAccepted = isAccepted && str.toLower().contains(expressions[i]);
     }
+
+    sourceRow = *current_current_row;
+    *current_current_row += 1;
 
     if(isAccepted && *start_row == -1)
         *start_row = sourceRow;
@@ -60,5 +64,6 @@ void SearchProxyModel::Search()
 {
     *go_next = true;
     *start_row = -1;
+    *current_current_row = 0;
     invalidateFilter();
 }

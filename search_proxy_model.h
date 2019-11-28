@@ -4,6 +4,7 @@
 #include <QSortFilterProxyModel>
 #include <QTableView>
 #include <QDebug>
+#include <QHeaderView>
 
 class SearchProxyModel : public QSortFilterProxyModel
 {
@@ -13,6 +14,7 @@ private:
     QTableView* view;
     int* start_row;
     int* current_row;
+    int *current_current_row;
     bool* go_next;
     QVector<QRegExp> expressions;
 
