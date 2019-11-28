@@ -188,7 +188,6 @@ void AlgorTabWidget::updateTable(QString team_name)
         role_data << i.value();
 
     }
-    qDebug()<<max_value;
     stats->clearItems();
     stats->clearGraphs();
     stats->clearPlottables();
@@ -257,48 +256,45 @@ void AlgorTabWidget::MAGIC()
 
     QSqlQuery qry;
     qry.prepare("delete from team_heroes where team_name = '" + current_team + "'");
-    qDebug()<<"INIT "<<qry.exec();
+    qry.exec();
 
     // TANK
     qry.prepare("select hero_name from hero_roles "
                 "where (role_name = 'tank' and degree_of_affiliation between 3 and 5) "
                 "or (role_name = 'initiator' and degree_of_affiliation between 3 and 5) ORDER BY RAND() LIMIT 1");
-    qDebug()<<"TANK "<<qry.exec();
-
+    qry.exec();
     if(qry.size() > 0)
     {
         qry.next();
         qry.prepare("insert into team_heroes values('" + qry.value(0).toString() +"', '" + current_team + "')" );
-        qry.exec();
-        ++heroes;
+        if(qry.exec())
+            ++heroes;
     }
 
 
     // MID
     qry.prepare("select hero_name from hero_roles where (role_name = 'midder'"
                 " and degree_of_affiliation between 3 and 5)ORDER BY RAND() LIMIT 1");
-    qDebug()<<"MID "<<qry.exec();
-
+    qry.exec();
     if(qry.size() > 0)
     {
         qry.next();
         qry.prepare("insert into team_heroes values('" + qry.value(0).toString() +"', '" + current_team + "')" );
-        qry.exec();
-        ++heroes;
+        if(qry.exec())
+            ++heroes;
     }
 
     // CORE
     qry.prepare("select hero_name from hero_roles"
                 " where (role_name = 'core' and degree_of_affiliation between 3 and 5)"
                 " or (role_name = 'stealth' and degree_of_affiliation between 3 and 5) ORDER BY RAND() LIMIT 1");
-    qDebug()<<"CORE "<<qry.exec();
-
+    qry.exec();
     if(qry.size() > 0)
     {
         qry.next();
         qry.prepare("insert into team_heroes values('" + qry.value(0).toString() +"', '" + current_team + "')" );
-        qry.exec();
-        ++heroes;
+        if(qry.exec())
+            ++heroes;
     }
 
     // CORE 2
@@ -306,14 +302,13 @@ void AlgorTabWidget::MAGIC()
                 "where (role_name = 'killer' and degree_of_affiliation between 2 and 5) or "
                 "(role_name = 'core' and degree_of_affiliation between 3 and 5) "
                 "or (role_name = 'nuker' and degree_of_affiliation between 2 and 5) ORDER BY RAND() LIMIT 1");
-    qDebug()<<"CORE 2 "<<qry.exec();
-
+    qry.exec();
     if(qry.size() > 0)
     {
         qry.next();
         qry.prepare("insert into team_heroes values('" + qry.value(0).toString() +"', '" + current_team + "')" );
-        qry.exec();
-        ++heroes;
+        if(qry.exec())
+            ++heroes;
     }
 
 
@@ -321,30 +316,31 @@ void AlgorTabWidget::MAGIC()
     qry.prepare("select hero_name from hero_roles "
                 "where (role_name = 'support' and degree_of_affiliation between 3 and 5) or "
                 "(role_name = 'babysitter' and degree_of_affiliation between 3 and 5) ORDER BY RAND() LIMIT 1");
-    qDebug()<<"SUPP "<<qry.exec();
-
+    qry.exec();
     if(qry.size() > 0)
     {
         qry.next();
         qry.prepare("insert into team_heroes values('" + qry.value(0).toString() +"', '" + current_team + "')" );
-        qry.exec();
-        qDebug()<<qry.lastQuery();
-        ++heroes;
+        if(qry.exec())
+            ++heroes;
     }
 
     QSqlQuery heroes_qry;
     heroes_qry.prepare("select hero_name from heroes");
     heroes_qry.exec();
-
     int j = 0;
     for(int i = heroes; i < 5; ++j)
     {
-        if(!qry.next())
+        if(!heroes_qry.next())
             break;
 
-        qry.prepare("insert into team_heroes values('" + heroes_qry.value(0).toString() +"', '" + current_team + "') ORDER BY RAND() LIMIT 1" );
+        qry.prepare("insert into team_heroes values('" + heroes_qry.value(0).toString() +"', '" + current_team + "')" );
         if(qry.exec())
+        {
             ++i;
+            qDebug()<<"SSSSS";
+        }
+        qDebug()<<qry.lastQuery();
 
         if(j > qry.exec() * 3)
             break;
