@@ -8,6 +8,7 @@
 
 #include "Data/data_tab_widget.h"
 #include "Icons/icons_tab_widget.h"
+#include "Algor/algor_tab_widget.h"
 
 #define HEADER(X, Y) X->headerData(Y, Qt::Horizontal, Qt::DisplayRole).toString()
 #define DATA_ROLE 66
@@ -31,6 +32,7 @@ public:
 
     DataTabWidget* data_tab_widget;
     IconsTabWidget* icons_tab_widget;
+    AlgorTabWidget* algor_tab_widget;
 
 
     MainWindow(QWidget *parent = nullptr);

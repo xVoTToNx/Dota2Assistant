@@ -108,8 +108,6 @@ void IconsTabWidget::updateTable(Icon icon)
         button_icon_layout->addWidget(name);
         button_icon_layout->setAlignment(Qt::AlignHCenter);
 
-        // Switch coonect to different creation window func
-        // Use query
         switch(icon)
         {
         case Icon::hero:

@@ -1,15 +1,6 @@
 #include "main_window.h"
 #include "ui_mainwindow.h"
 
-#include <QtSql>
-#include <QDebug>
-#include <QTabWidget>
-#include <QTableView>
-#include <QHBoxLayout>
-#include <QPushButton>
-
-
-
 QSqlDatabase MainWindow::data_base = QSqlDatabase::addDatabase("QMYSQL");
 
 QLabel* MainWindow::CreateLabel(QString text)
@@ -56,6 +47,9 @@ MainWindow::MainWindow(QWidget *parent)
     icons_tab_widget = new IconsTabWidget("Icons", this);
     main_tab_widget->addTab(icons_tab_widget, icons_tab_widget->GetName());
     qDebug()<<"IconTab Finished";
+    algor_tab_widget = new AlgorTabWidget("Algor", this);
+    main_tab_widget->addTab(algor_tab_widget, algor_tab_widget->GetName());
+    qDebug()<<"AlgorTab Finished";
 
     connect(main_tab_widget, &QTabWidget::currentChanged, [this](int index)
     {
@@ -66,6 +60,9 @@ MainWindow::MainWindow(QWidget *parent)
            break;
        case 1:
            icons_tab_widget->Update();
+           break;
+       case 2:
+           algor_tab_widget->Update();
            break;
        }
     });

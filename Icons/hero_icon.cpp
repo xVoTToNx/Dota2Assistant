@@ -21,6 +21,7 @@ HeroIcon::HeroIcon(QString hero_name, QWidget *parent)
 
     pic_data_layout->addWidget(pic);
 
+    QGroupBox* data_group = new QGroupBox(this);
 
     QLabel* hero_name_label = MainWindow::CreateLabel(hero_name);
     data_layout->addWidget(hero_name_label, 0, 0, 1, 2);
@@ -42,9 +43,10 @@ HeroIcon::HeroIcon(QString hero_name, QWidget *parent)
     QLabel* move_speed_label = MainWindow::CreateLabel("Move Speed: " + qry.value("move_speed").toString());
     data_layout->addWidget(attack_speed_label, 5, 0);
     data_layout->addWidget(move_speed_label, 5, 1);
+    data_group->setLayout(data_layout);
 
     data_layout->setAlignment(Qt::AlignCenter);
-    pic_data_layout->addLayout(data_layout);
+    pic_data_layout->addWidget(data_group);
 
     main_layout->addLayout(pic_data_layout);
     main_layout->addWidget(skills_list);

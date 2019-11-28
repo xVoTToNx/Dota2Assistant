@@ -28,6 +28,4 @@ void DataItemDelegate::setModelData(QWidget *editor, QAbstractItemModel *model, 
     qry.exec();
     sql_model->setTable(sql_model->tableName());
     sql_model->select();
-
-    //QStyledItemDelegate::setModelData(editor, model, index);
 }

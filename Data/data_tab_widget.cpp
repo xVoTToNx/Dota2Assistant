@@ -280,7 +280,7 @@ void DataTabWidget::removeRow()
             {
                 QString query_text = "delete from " + model->tableName() + " where ";
                 size_t i = 0;
-                for(; i < model->columnCount() - 1; ++i)
+                for(; i < model->columnCount(); ++i)
                 {
                     QVariant value = model->data(model->index(index.row(), i));
                     if(value.type() == QVariant::Type::DateTime)
@@ -289,8 +289,8 @@ void DataTabWidget::removeRow()
                                         "'" + value.toString() + "'" : value.toString();
                     query_text += HEADER(model, i) + " = " + str_value + " AND ";
                 }
-                query_text += HEADER(model, i) + " = " + model->data(model->index(index.row(), i)).toString();
                 QSqlQuery qry;
+                query_text.chop(4);
                 qry.prepare(query_text);
                 qry.exec();
 

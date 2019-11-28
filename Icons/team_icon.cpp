@@ -21,6 +21,7 @@ TeamIcon::TeamIcon(QString team_name, QWidget *parent)
 
     pic_data_layout->addWidget(pic);
 
+    QGroupBox* data_group = new QGroupBox(this);
 
     QLabel* hero_name_label = MainWindow::CreateLabel(team_name);
     data_layout->addWidget(hero_name_label, 0, 0, 1, 2);
@@ -35,11 +36,12 @@ TeamIcon::TeamIcon(QString team_name, QWidget *parent)
     data_layout->addWidget(desc_label, 3, 0, 1, 2);
     QPushButton* stats_button = new QPushButton("STATS", this);
     data_layout->addWidget(stats_button, 4, 0, 1, 2);
+    data_group->setLayout(data_layout);
 
     connect(stats_button, &QPushButton::clicked, this, std::bind(&TeamIcon::createTeamStats, this, team_name));
 
     data_layout->setAlignment(Qt::AlignCenter);
-    pic_data_layout->addLayout(data_layout);
+    pic_data_layout->addWidget(data_group);
 
     main_layout->addLayout(pic_data_layout);
     main_layout->addLayout(heroes_layout);
@@ -129,12 +131,7 @@ void TeamIcon::createTeamStats(QString team_name)
         }
     }
 
-    for(auto k : ticks)
-    {
-        qDebug()<<k;
-    }
-
-    QCustomPlot* customPlot = new QCustomPlot();
+    QCustomPlot* customPlot = new QCustomPlot(this);
 
     QLinearGradient gradient(0, 0, 0, 400);
     gradient.setColorAt(0, QColor(90, 90, 90));

@@ -20,6 +20,7 @@ ItemIcon::ItemIcon(QString item_name, QWidget *parent)
 
   pic_data_layout->addWidget(pic);
 
+  QGroupBox* data_group = new QGroupBox(this);
 
   QLabel* hero_name_label = MainWindow::CreateLabel(item_name);
   data_layout->addWidget(hero_name_label, 0, 0);
@@ -30,10 +31,11 @@ ItemIcon::ItemIcon(QString item_name, QWidget *parent)
   QLabel* desc_label = MainWindow::CreateLabel("Description: " + qry.value("description").toString());
   desc_label->setWordWrap(true);
   data_layout->addWidget(desc_label, 3, 0);
+  data_group->setLayout(data_layout);
 
 
   data_layout->setAlignment(Qt::AlignCenter);
-  pic_data_layout->addLayout(data_layout);
+  pic_data_layout->addWidget(data_group);
 
   main_layout->addLayout(pic_data_layout);
   main_layout->addWidget(recomendations_list);
@@ -52,7 +54,8 @@ ItemIcon* ItemIcon::CreateMe(QString item_name)
 void ItemIcon::fillRecomendationsList(QString item_name)
 {
     QSqlQuery qry(MainWindow::data_base);
-    qry.prepare(QString("select * from recomendations where item_name = '" + item_name + "' order by hero_name, is_contr"));
+    qry.prepare(QString("select heroes.hero_name, is_contr, description, picture_path from recomendations , heroes "
+                        "where item_name = '" + item_name + "' and heroes.hero_name = recomendations.hero_name order by hero_name, is_contr"));
     qry.exec();
     while(qry.next())
     {
@@ -64,11 +67,7 @@ void ItemIcon::fillRecomendationsList(QString item_name)
         QLabel* refl_pic = new QLabel();
         pic->setFixedSize(100,100);
 
-        QSqlQuery qry_hero(MainWindow::data_base);
-        qry_hero.prepare(QString("select picture_path from heroes where hero_name = '" + qry.value("hero_name").toString() + "'"));
-        qry_hero.exec(); qry_hero.next();
-
-        QPixmap pixmap(qry_hero.value("picture_path").toString());
+        QPixmap pixmap(qry.value("picture_path").toString());
         if(!pixmap.isNull())
         {
             pic->setPixmap(pixmap.scaled(100, 100, Qt::KeepAspectRatio));

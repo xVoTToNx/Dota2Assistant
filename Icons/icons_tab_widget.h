@@ -14,6 +14,7 @@
 
 
 #include "filter_proxy_model.h"
+#include "Algor/algor_tab_widget.h"
 #include "hero_icon.h"
 #include "item_icon.h"
 #include "team_icon.h"
@@ -52,8 +53,6 @@ public:
 
     void Update() {updateTable(current_table);}
     QString GetName() { return name; }
-
-private:
 
 private slots:
     void updateTable(Icon icon);
