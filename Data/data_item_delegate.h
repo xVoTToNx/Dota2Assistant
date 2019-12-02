@@ -10,8 +10,11 @@
 class DataItemDelegate : public QStyledItemDelegate
 {
     QSqlTableModel* sql_model;
+
 public:
     DataItemDelegate(QSqlTableModel* model, QWidget* parent = nullptr);
+    QWidget* createEditor(QWidget * parent, const QStyleOptionViewItem & option, const QModelIndex & index) const;
+    void setEditorData(QWidget * editor, const QModelIndex & index) const;
     void setModelData(QWidget *editor, QAbstractItemModel *model, const QModelIndex &index) const override;
 };
 

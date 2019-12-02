@@ -449,9 +449,38 @@ void DataTabWidget::changeTable(const QString& table_name)
 {
     current_table = table_name;
     model->setTable(table_name);
-    model->setEditStrategy(QSqlTableModel::OnManualSubmit);;
+    model->setEditStrategy(QSqlTableModel::OnManualSubmit);
     model->select();
 
     changeFilterSearchTabs();
+
+    QSqlQuery qry;
+    qry.exec("SHOW CREATE TABLE " + table_name);
+    qry.next();
+    QString show_create_table = qry.value(1).toString().toLower();
+
+    QRegExp rx("foreign key \\(`([^`]*)`\\) references `([^`]*)` \\(`([^`]*)`\\)");
+
+    int pos = rx.indexIn(show_create_table);
+    while(pos != -1)
+    {
+        QStringList list = rx.capturedTexts();
+
+        int i = 0;
+        for(; i < model->columnCount(); ++i)
+        {
+            if(HEADER(model, i) == list[1])
+                break;
+        }
+        model->setHeaderData(i, Qt::Orientation::Horizontal, "combo", Qt::UserRole + 1);
+        qry.exec("select " + list[3] + " from " + list[2]);
+        QStringList combo_list;
+        while(qry.next())
+            combo_list.append(qry.value(0).toString());
+
+        model->setHeaderData(i, Qt::Orientation::Horizontal, combo_list, Qt::UserRole + 2);
+
+        pos = rx.indexIn(show_create_table, pos + 1);
+    }
 }
 
