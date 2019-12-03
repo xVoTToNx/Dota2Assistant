@@ -17,6 +17,17 @@ QWidget *DataItemDelegate::createEditor(QWidget *parent, const QStyleOptionViewI
         box->setProperty("my_type", "combo");
         return box;
     }
+    else if(sql_model->headerData(index.column(), Qt::Orientation::Horizontal, Qt::UserRole + 1).toString() == "const")
+    {
+        return nullptr;
+    }
+    else if(sql_model->headerData(index.column(), Qt::Orientation::Horizontal, Qt::UserRole + 1).toString() == "picture")
+    {
+        QLineEdit* edit = new QLineEdit(parent);
+        edit->setProperty("my_type", "picture");
+        return edit;
+    }
+
     QStyledItemDelegate::createEditor(parent, option, index);
 }
 
@@ -29,13 +40,26 @@ void DataItemDelegate::setEditorData(QWidget *editor, const QModelIndex &index) 
         box->setCurrentIndex(indexed_text);
         return;
     }
+    else if(editor->property("my_type").toString() == "picture")
+    {
+        QLineEdit* edit = static_cast<QLineEdit*>(editor);
+        QString fileName = QFileDialog::getOpenFileName(editor->parentWidget(),
+            tr("Open Image"), "C:/", tr("Image Files (*.png *.jpg)"));
+
+        if(fileName == "")
+        {
+            fileName = sql_model->data(index).toString();
+        }
+        edit->setText(fileName);
+        editor->setProperty("my_type", "picture_used");
+        return;
+    }
     QStyledItemDelegate::setEditorData(editor, index);
 }
 
 void DataItemDelegate::setModelData(QWidget *editor, QAbstractItemModel *model, const QModelIndex &index) const
 {
     QByteArray n = editor->metaObject()->userProperty().name();
-    QString id = model->data(model->index(index.row(), 0)).toString();
     QString value = editor->property(n).toString();
 
     if(editor->property(n).type() == QVariant::Type::String)
@@ -55,10 +79,9 @@ void DataItemDelegate::setModelData(QWidget *editor, QAbstractItemModel *model, 
         qry_text += HEADER(sql_model,i) + " = " + value_to_add + " and ";
     }
     qry_text.chop(4);
-
     qry.prepare(qry_text);
-
-    qDebug()<<qry.exec();
-    qDebug()<<qry.lastQuery();
-    model->setData(index, editor->property(n), Qt::EditRole);
+    if(qry.exec())
+        model->setData(index, editor->property(n), Qt::EditRole);
+    else
+        MainWindow::ThrowError(qry.lastError().text());
 }

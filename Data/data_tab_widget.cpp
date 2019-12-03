@@ -454,33 +454,96 @@ void DataTabWidget::changeTable(const QString& table_name)
 
     changeFilterSearchTabs();
 
+
+    // ADDING DATA TO HEADER FROM DB TO VIEW
     QSqlQuery qry;
     qry.exec("SHOW CREATE TABLE " + table_name);
     qry.next();
     QString show_create_table = qry.value(1).toString().toLower();
+    qDebug()<<show_create_table;
 
-    QRegExp rx("foreign key \\(`([^`]*)`\\) references `([^`]*)` \\(`([^`]*)`\\)");
-
-    int pos = rx.indexIn(show_create_table);
-    while(pos != -1)
+    // FOREIGN KEYS
     {
-        QStringList list = rx.capturedTexts();
+        QRegExp rx("foreign key \\(`([^`]*)`\\) references `([^`]*)` \\(`([^`]*)`\\)");
 
+        int pos = rx.indexIn(show_create_table);
+        while(pos != -1)
+        {
+            QStringList list = rx.capturedTexts();
+
+            int i = 0;
+            for(; i < model->columnCount(); ++i)
+            {
+                if(HEADER(model, i) == list[1])
+                    break;
+            }
+            model->setHeaderData(i, Qt::Orientation::Horizontal, "combo", Qt::UserRole + 1);
+            QSqlQuery select_query;
+            select_query.exec("select " + list[3] + " from " + list[2]);
+            QStringList combo_list;
+            while(select_query.next())
+                combo_list.append(select_query.value(0).toString());
+
+            model->setHeaderData(i, Qt::Orientation::Horizontal, combo_list, Qt::UserRole + 2);
+
+            pos = rx.indexIn(show_create_table, pos + 1);
+        }
+    }
+
+    // ENUMS
+    {
+        QRegExp rx("`([^`]*)` enum\\(([^\\)]*)\\)");
+
+        int pos = rx.indexIn(show_create_table);
+        while(pos != -1)
+        {
+            QStringList list = rx.capturedTexts();
+
+            int i = 0;
+            for(; i < model->columnCount(); ++i)
+            {
+                if(HEADER(model, i) == list[1])
+                    break;
+            }
+            model->setHeaderData(i, Qt::Orientation::Horizontal, "combo", Qt::UserRole + 1);
+            list[2].remove('\'');
+            QStringList combo_list = list[2].split(',');
+            model->setHeaderData(i, Qt::Orientation::Horizontal, combo_list, Qt::UserRole + 2);
+
+            pos = rx.indexIn(show_create_table, pos + 1);
+        }
+    }
+
+    // GENERATED
+    {
+        QRegExp rx("`([^`]*)` ([^ ]*) generated");
+
+        int pos = rx.indexIn(show_create_table);
+        while(pos != -1)
+        {
+            QStringList list = rx.capturedTexts();
+
+            int i = 0;
+            for(; i < model->columnCount(); ++i)
+            {
+                if(HEADER(model, i) == list[1])
+                    break;
+            }
+            model->setHeaderData(i, Qt::Orientation::Horizontal, "const", Qt::UserRole + 1);
+            pos = rx.indexIn(show_create_table, pos + 1);
+        }
+    }
+
+    // PICTURES
+    {
         int i = 0;
         for(; i < model->columnCount(); ++i)
         {
-            if(HEADER(model, i) == list[1])
+            if(HEADER(model, i) == "picture_path")
                 break;
         }
-        model->setHeaderData(i, Qt::Orientation::Horizontal, "combo", Qt::UserRole + 1);
-        qry.exec("select " + list[3] + " from " + list[2]);
-        QStringList combo_list;
-        while(qry.next())
-            combo_list.append(qry.value(0).toString());
-
-        model->setHeaderData(i, Qt::Orientation::Horizontal, combo_list, Qt::UserRole + 2);
-
-        pos = rx.indexIn(show_create_table, pos + 1);
+        model->setHeaderData(i, Qt::Orientation::Horizontal, "picture", Qt::UserRole + 1);
     }
+
 }
 
