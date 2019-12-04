@@ -403,24 +403,17 @@ void DataTabWidget::changeFilterSearchTabs()
                 connect(static_cast<QSpinBox*>(search_widget), QOverload<const QString&>::of(&QSpinBox::valueChanged), search_func);
                 break;
             }
-            case QVariant::Type::Date: {
-                filter_widget = new QDateEdit();
-                connect(static_cast<QDateEdit*>(filter_widget), &QDateEdit::dateChanged, [this, i]( const QDate &date)
+            case QVariant::Type::DateTime: {
+                filter_widget = new QDateTimeEdit();
+                connect(static_cast<QDateTimeEdit*>(filter_widget), &QDateTimeEdit::dateTimeChanged, [this, i]( const QDateTime &date)
                 {
-                    QString month_zero = date.month() > 9 ? "" : "0";
-                    QString day_zero = date.day() > 9 ? "" : "0";
-                    this->filter_model->setExpression(i, QString::number(date.year()) + '-' +
-                    month_zero + QString::number(date.month()) + '-' +
-                    day_zero + QString::number(date.day()));
+                    this->filter_model->setExpression(i, date.toString("yyyy-MM-dd hh:mm:ss"));
                 });
-                search_widget = new QDateEdit();
-                connect(static_cast<QDateEdit*>(search_widget), &QDateEdit::dateChanged, [this, i]( const QDate &date)
+                search_widget = new QDateTimeEdit();
+                connect(static_cast<QDateTimeEdit*>(search_widget), &QDateTimeEdit::dateTimeChanged, [this, i]( const QDateTime &date)
                 {
-                    QString month_zero = date.month() > 9 ? "" : "0";
-                    QString day_zero = date.day() > 9 ? "" : "0";
-                    this->search_model->setExpression(i, QString::number(date.year()) + '-' +
-                    month_zero + QString::number(date.month()) + '-' +
-                    day_zero + QString::number(date.day()));
+                    this->search_model->setExpression(i, date.toString("yyyy-MM-dd hh:mm:ss"));
+
                 });
                 break;
             }
@@ -445,6 +438,24 @@ void DataTabWidget::changeFilterSearchTabs()
     connect(searchButton, &QPushButton::clicked, [this](){this->search_model->Search();});
 }
 
+void DataTabWidget::addHeaderData(QString& source, QRegExp reg_exp, void (*data_handler)(QStringList&, int i,QSqlTableModel*))
+{
+    int pos = reg_exp.indexIn(source);
+    while(pos != -1)
+    {
+        QStringList list = reg_exp.capturedTexts();
+
+        int i = 0;
+        for(; i < model->columnCount(); ++i)
+        {
+            if(HEADER(model, i) == list[1])
+                break;
+        }
+        data_handler(list, i, model);
+        pos = reg_exp.indexIn(source, pos + 1);
+    }
+}
+
 void DataTabWidget::changeTable(const QString& table_name)
 {
     current_table = table_name;
@@ -462,88 +473,44 @@ void DataTabWidget::changeTable(const QString& table_name)
     QString show_create_table = qry.value(1).toString().toLower();
     qDebug()<<show_create_table;
 
+
     // FOREIGN KEYS
+    QRegExp foreign_reg_exp("foreign key \\(`([^`]*)`\\) references `([^`]*)` \\(`([^`]*)`\\)");
+    addHeaderData(show_create_table, foreign_reg_exp, [](QStringList& list, int i, QSqlTableModel* model)
     {
-        QRegExp rx("foreign key \\(`([^`]*)`\\) references `([^`]*)` \\(`([^`]*)`\\)");
+        model->setHeaderData(i, Qt::Orientation::Horizontal, "combo", Qt::UserRole + 1);
+        QSqlQuery select_query;
+        select_query.exec("select " + list[3] + " from " + list[2]);
+        QStringList combo_list;
+        while(select_query.next())
+            combo_list.append(select_query.value(0).toString());
 
-        int pos = rx.indexIn(show_create_table);
-        while(pos != -1)
-        {
-            QStringList list = rx.capturedTexts();
-
-            int i = 0;
-            for(; i < model->columnCount(); ++i)
-            {
-                if(HEADER(model, i) == list[1])
-                    break;
-            }
-            model->setHeaderData(i, Qt::Orientation::Horizontal, "combo", Qt::UserRole + 1);
-            QSqlQuery select_query;
-            select_query.exec("select " + list[3] + " from " + list[2]);
-            QStringList combo_list;
-            while(select_query.next())
-                combo_list.append(select_query.value(0).toString());
-
-            model->setHeaderData(i, Qt::Orientation::Horizontal, combo_list, Qt::UserRole + 2);
-
-            pos = rx.indexIn(show_create_table, pos + 1);
-        }
-    }
+        model->setHeaderData(i, Qt::Orientation::Horizontal, combo_list, Qt::UserRole + 2);
+    });
 
     // ENUMS
+    QRegExp enums_reg_exp("`([^`]*)` enum\\(([^\\)]*)\\)");
+    addHeaderData(show_create_table, enums_reg_exp, [](QStringList& list, int i, QSqlTableModel* model)
     {
-        QRegExp rx("`([^`]*)` enum\\(([^\\)]*)\\)");
-
-        int pos = rx.indexIn(show_create_table);
-        while(pos != -1)
-        {
-            QStringList list = rx.capturedTexts();
-
-            int i = 0;
-            for(; i < model->columnCount(); ++i)
-            {
-                if(HEADER(model, i) == list[1])
-                    break;
-            }
-            model->setHeaderData(i, Qt::Orientation::Horizontal, "combo", Qt::UserRole + 1);
-            list[2].remove('\'');
-            QStringList combo_list = list[2].split(',');
-            model->setHeaderData(i, Qt::Orientation::Horizontal, combo_list, Qt::UserRole + 2);
-
-            pos = rx.indexIn(show_create_table, pos + 1);
-        }
-    }
+        model->setHeaderData(i, Qt::Orientation::Horizontal, "combo", Qt::UserRole + 1);
+        list[2].remove('\'');
+        QStringList combo_list = list[2].split(',');
+        model->setHeaderData(i, Qt::Orientation::Horizontal, combo_list, Qt::UserRole + 2);
+    });
 
     // GENERATED
+    QRegExp genereate_reg_exp("`([^`]*)` ([^ ]*) generated");
+    addHeaderData(show_create_table, genereate_reg_exp, [](QStringList& list, int i, QSqlTableModel* model)
     {
-        QRegExp rx("`([^`]*)` ([^ ]*) generated");
-
-        int pos = rx.indexIn(show_create_table);
-        while(pos != -1)
-        {
-            QStringList list = rx.capturedTexts();
-
-            int i = 0;
-            for(; i < model->columnCount(); ++i)
-            {
-                if(HEADER(model, i) == list[1])
-                    break;
-            }
-            model->setHeaderData(i, Qt::Orientation::Horizontal, "const", Qt::UserRole + 1);
-            pos = rx.indexIn(show_create_table, pos + 1);
-        }
-    }
+        model->setHeaderData(i, Qt::Orientation::Horizontal, "const", Qt::UserRole + 1);
+    });
 
     // PICTURES
+    QRegExp picture_reg_exp("(picture_path)");
+    addHeaderData(show_create_table, picture_reg_exp, [](QStringList& list, int i, QSqlTableModel* model)
     {
-        int i = 0;
-        for(; i < model->columnCount(); ++i)
-        {
-            if(HEADER(model, i) == "picture_path")
-                break;
-        }
         model->setHeaderData(i, Qt::Orientation::Horizontal, "picture", Qt::UserRole + 1);
-    }
+    });
 
 }
 

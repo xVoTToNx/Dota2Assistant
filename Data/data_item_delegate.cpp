@@ -65,6 +65,9 @@ void DataItemDelegate::setModelData(QWidget *editor, QAbstractItemModel *model, 
     if(editor->property(n).type() == QVariant::Type::String)
         value = "'" + value + "'";
 
+    if(editor->property(n).type() == QVariant::Type::DateTime)
+        value = "'" + editor->property(n).toDateTime().toString("yyyy-MM-dd hh:mm:ss") + "'";
+
     QSqlQuery qry;
     QString qry_text = QString("update %1 set %2 = %3 where ").arg(
                 sql_model->tableName(), HEADER(sql_model,index.column()), value);
@@ -75,6 +78,8 @@ void DataItemDelegate::setModelData(QWidget *editor, QAbstractItemModel *model, 
         QString value_to_add = vvalue.toString();
         if(vvalue.type() == QVariant::String)
             value_to_add = "'" + value_to_add + "'";
+        if(vvalue.type() == QVariant::Type::DateTime)
+            value_to_add = "'" + vvalue.toDateTime().toString("yyyy-MM-dd hh:mm:ss") + "'";
 
         qry_text += HEADER(sql_model,i) + " = " + value_to_add + " and ";
     }
