@@ -79,6 +79,7 @@ private:
     void printTable();
     void changeFilterSearchTabs();
     void addHeaderData(QString& source, QRegExp reg_exp, void (*data_handler)(QStringList& list, int i, QSqlTableModel* model));
+    void fillHeaderData();
 
 private slots:
     void changeTable(const QString& table_name);

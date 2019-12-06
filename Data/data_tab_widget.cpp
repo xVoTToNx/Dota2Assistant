@@ -104,156 +104,83 @@ DataTabWidget::DataTabWidget(QString&& name, QWidget *parent)
 
 void DataTabWidget::insertRow()
 {
+    // CHECK IF WE ADDINT INTO QUERY!!!!!!!!!!!!!!!!!!!!!!!
     bool was_closed = true;
 
     QString query_test = "INSERT INTO " + model->tableName() + " VALUES (";
     QDialog* dialog = new QDialog(this);
     QVBoxLayout* layout = new QVBoxLayout();
 
+
+    QVector<QWidget*> widgets;
+
     QPushButton* button = new QPushButton("Insert!");
     connect(button, &QPushButton::clicked, dialog, &QDialog::close);
     dialog->setLayout(layout);
 
-    if(current_table == "heroes")
-    {
-        QLineEdit* edit = new QLineEdit();
-        layout->addWidget(new QLabel("Hero Name"));
-        layout->addWidget(edit);
-        connect(button, &QPushButton::clicked, [dialog, &query_test, this, edit, &was_closed]()
-        {
-            if(edit->text() == "") return;
-            query_test += " '" + edit->text() + "',";
-            for(size_t i = 1; i < model->columnCount() - 1; ++i)
-                query_test += " DEFAULT,";
-            query_test += " DEFAULT )";
 
-            was_closed = false;
-        });
-    }
-    else if(current_table == "skills")
+    int i = 0;
+    for(; i < model->columnCount(); ++i)
     {
-        QLineEdit* edit_skill = new QLineEdit();
-        layout->addWidget(new QLabel("Skill Name"));
-        layout->addWidget(edit_skill);
-        QLineEdit* edit_hero = new QLineEdit();
-        layout->addWidget(new QLabel("Hero Name"));
-        layout->addWidget(edit_hero);
-        connect(button, &QPushButton::clicked, [dialog, &query_test, this, edit_hero, edit_skill, &was_closed]()
+        if(model->headerData(i, Qt::Orientation::Horizontal, Qt::UserRole + 3).toString() == "primary")
         {
-            if(edit_skill->text() == "") return;
-            query_test += " '" + edit_skill->text() + "', DEFAULT, '" + edit_hero->text() + "',";
-            for(size_t i = 3; i < model->columnCount() - 1; ++i)
-                query_test += " DEFAULT,";
-            query_test += " DEFAULT )";
+            QLabel* label = new QLabel(model->headerData(i, Qt::Horizontal, Qt::DisplayRole).toString());
+            layout->addWidget(label);
 
-            was_closed = false;
-        });
-    }
-    else if(current_table == "items")
-    {
-        QLineEdit* edit_item = new QLineEdit();
-        layout->addWidget(new QLabel("Item Name"));
-        layout->addWidget(edit_item);
-        connect(button, &QPushButton::clicked, [dialog, &query_test, this, edit_item, &was_closed]()
-        {
-            if(edit_item->text() == "") return;
-            query_test += " '" + edit_item->text() + "',";
-            for(size_t i = 1; i < model->columnCount() - 1; ++i)
-                query_test += " DEFAULT,";
-            query_test += " DEFAULT )";
+            if(model->headerData(i, Qt::Orientation::Horizontal, Qt::UserRole + 1).toString() == "combo")
+            {
+                QComboBox* box = new QComboBox();
+                box->addItems(model->headerData(i, Qt::Orientation::Horizontal, Qt::UserRole + 2).value<QStringList>());
+                layout->addWidget(box);
+                widgets.push_back(box);
+                continue;
+            }
 
-            was_closed = false;
-        });
+            QVariant::Type type = model->data(model->index(0, i)).type();
+            switch(type)
+            {
+            case QVariant::Type::String:
+            {
+                QLineEdit* edit = new QLineEdit();
+                layout->addWidget(edit);
+                widgets.push_back(edit);
+                break;
+            }
+            case QVariant::Type::Int:
+            {
+                QSpinBox* edit = new QSpinBox();
+                layout->addWidget(edit);
+                widgets.push_back(edit);
+                break;
+            }
+            }
+        }
     }
-    else if(current_table == "recomendations")
-    {
-        QLineEdit* edit_hero = new QLineEdit();
-        layout->addWidget(new QLabel("Hero Name"));
-        layout->addWidget(edit_hero);
-        QLineEdit* edit_item = new QLineEdit();
-        layout->addWidget(new QLabel("Item Name"));
-        layout->addWidget(edit_item);
-        QRadioButton* radio_contr = new QRadioButton();
-        layout->addWidget(new QLabel("Is Contr Item"));
-        layout->addWidget(radio_contr);
-        connect(button, &QPushButton::clicked, [&query_test, this, edit_hero, edit_item, radio_contr, &was_closed]()
-        {
-            query_test += " '" + edit_hero->text() + "', '" + edit_item->text() + "',";
-            if (radio_contr->isChecked())
-                query_test += "true, ";
-            else
-                query_test += "false, ";
-            for(size_t i = 3; i < model->columnCount() - 1; ++i)
-                query_test += " DEFAULT,";
-            query_test += " DEFAULT )";
 
-            was_closed = false;
-        });
-    }
-    else if(current_table == "roles")
+    connect(button, &QPushButton::clicked, [&widgets, &query_test, this, &was_closed]()
     {
-        QLineEdit* edit_role = new QLineEdit();
-        layout->addWidget(new QLabel("Role Name"));
-        layout->addWidget(edit_role);
-        connect(button, &QPushButton::clicked, [dialog, &query_test, this, edit_role, &was_closed]()
+        int widgets_i = 0;
+        for(size_t i = 0; i < model->columnCount(); ++i)
         {
-            if(edit_role->text() == "") return;
-            query_test += " '" + edit_role->text() + "',";
-            for(size_t i = 1; i < model->columnCount() - 1; ++i)
-                query_test += " DEFAULT,";
-            query_test += " DEFAULT )";
+            QString value = "DEFAULT";
+            qDebug()<<model->headerData(i, Qt::Orientation::Horizontal, Qt::UserRole + 3).toString();
+            if(model->headerData(i, Qt::Orientation::Horizontal, Qt::UserRole + 3).toString() == "primary")
+            {
+                QByteArray n = widgets[widgets_i]->metaObject()->userProperty().name();
+                value = widgets[widgets_i]->property(n).toString();
 
-            was_closed = false;
-        });
-    }
-    else if(current_table == "hero_roles")
-    {
-        QLineEdit* edit_hero = new QLineEdit();
-        layout->addWidget(new QLabel("Hero Name"));
-        layout->addWidget(edit_hero);
-        QLineEdit* edit_role = new QLineEdit();
-        layout->addWidget(new QLabel("Role Name"));
-        layout->addWidget(edit_role);
-        connect(button, &QPushButton::clicked, [&query_test, this, edit_hero, edit_role, &was_closed]()
-        {
-            query_test += " '" + edit_hero->text() + "', '" + edit_role->text() + "',";
-            for(size_t i = 2; i < model->columnCount() - 1; ++i)
-                query_test += " DEFAULT,";
-            query_test += " DEFAULT )";
+                if(widgets[widgets_i]->property(n).type() == QVariant::Type::String)
+                    value = "'" + value + "'";
 
-            was_closed = false;
-        });
-    }
-    else if(current_table == "teams")
-    {
-        QLineEdit* edit_team = new QLineEdit();
-        layout->addWidget(new QLabel("Team Name"));
-        layout->addWidget(edit_team);
-        connect(button, &QPushButton::clicked, [dialog, &query_test, this, edit_team, &was_closed]()
-        {
-            if(edit_team->text() == "") return;
-            query_test += " '" + edit_team->text() + "',";
-            for(size_t i = 1; i < model->columnCount() - 1; ++i)
-                query_test += " DEFAULT,";
-            query_test += " DEFAULT )";
+                ++widgets_i;
+            }
+            query_test += value + ", ";
+        }
+        query_test.chop(2);
+        query_test += ")";
 
-            was_closed = false;
-        });
-    }
-    else if(current_table == "team_heroes")
-    {
-        QLineEdit* edit_hero = new QLineEdit();
-        layout->addWidget(new QLabel("Hero Name"));
-        layout->addWidget(edit_hero);
-        QLineEdit* edit_team = new QLineEdit();
-        layout->addWidget(new QLabel("Team Name"));
-        layout->addWidget(edit_team);
-        connect(button, &QPushButton::clicked, [&query_test, this, edit_hero, edit_team, &was_closed]()
-        {
-            query_test += " '" + edit_hero->text() + "', '" + edit_team->text() + "')";
-            was_closed = false;
-        });
-    }
+        was_closed = false;
+    });
 
     layout->addWidget(button);
     dialog->exec();
@@ -264,7 +191,10 @@ void DataTabWidget::insertRow()
     qry.prepare(query_test);
 
     if(!qry.exec())
+    {
         MainWindow::ThrowError("Something went wrong... Sooorry...<( _ _ )>");
+        qDebug()<<qry.lastQuery();
+    }
     changeTable(model->tableName());
 }
 
@@ -372,8 +302,14 @@ void DataTabWidget::changeFilterSearchTabs()
     size_t i = 0;
     for(; i < current_model->columnCount(); ++i)
     {
-        filter_layout->addWidget(new QLabel(current_model->headerData(i, Qt::Horizontal, Qt::DisplayRole).toString()), i, 0);
-        search_layout->addWidget(new QLabel(current_model->headerData(i, Qt::Horizontal, Qt::DisplayRole).toString()), i, 0);
+        QLabel* filter_label = new QLabel(current_model->headerData(i, Qt::Horizontal, Qt::DisplayRole).toString());
+        filter_label->setMinimumHeight(40);
+        filter_layout->addWidget(filter_label, i, 0);
+
+        QLabel* search_label = new QLabel(current_model->headerData(i, Qt::Horizontal, Qt::DisplayRole).toString());
+        search_label->setMinimumHeight(40);
+        search_layout->addWidget(search_label, i, 0);
+
         QWidget* filter_widget = nullptr;
         QWidget* search_widget = nullptr;
         auto filter_func = std::bind(&FilterProxyModel::setExpression, filter_model, i,std::placeholders::_1);
@@ -433,8 +369,16 @@ void DataTabWidget::changeFilterSearchTabs()
         }
     }
 
+    QWidget* filter_dummy_widget = new QWidget();
+    filter_dummy_widget->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+    QWidget* search_dummy_widget = new QWidget();
+    search_dummy_widget->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+
+    filter_layout->addWidget(filter_dummy_widget, i, 0, 1, 2);
+    search_layout->addWidget(search_dummy_widget, i, 0, 1, 3);
+
     QPushButton* searchButton = new QPushButton("CLR");
-    search_layout->addWidget(searchButton, i, 0, 1, 3);
+    search_layout->addWidget(searchButton, i + 1, 0, 1, 3);
     connect(searchButton, &QPushButton::clicked, [this](){this->search_model->Search();});
 }
 
@@ -456,23 +400,33 @@ void DataTabWidget::addHeaderData(QString& source, QRegExp reg_exp, void (*data_
     }
 }
 
-void DataTabWidget::changeTable(const QString& table_name)
+void DataTabWidget::fillHeaderData()
 {
-    current_table = table_name;
-    model->setTable(table_name);
-    model->setEditStrategy(QSqlTableModel::OnManualSubmit);
-    model->select();
-
-    changeFilterSearchTabs();
-
-
     // ADDING DATA TO HEADER FROM DB TO VIEW
     QSqlQuery qry;
-    qry.exec("SHOW CREATE TABLE " + table_name);
+    qry.exec("SHOW CREATE TABLE " + current_table);
     qry.next();
     QString show_create_table = qry.value(1).toString().toLower();
-    qDebug()<<show_create_table;
+    //qDebug()<<show_create_table;
 
+    // PRIMARY KEYS
+    QRegExp primary_reg_exp("primary key \\(([^\\)]*)\\)");
+    addHeaderData(show_create_table, primary_reg_exp, [](QStringList& list, int i, QSqlTableModel* model)
+    {
+        list[1].remove('\`');
+        QStringList primary_list = list[1].split(',');
+
+        for(int i = 0; i < primary_list.size(); ++i)
+        {
+            int j = 0;
+            for(; j < model->columnCount(); ++j)
+            {
+                if(HEADER(model, j) == primary_list[i])
+                    break;
+            }
+            model->setHeaderData(j, Qt::Orientation::Horizontal, "primary", Qt::UserRole + 3);
+        }
+    });
 
     // FOREIGN KEYS
     QRegExp foreign_reg_exp("foreign key \\(`([^`]*)`\\) references `([^`]*)` \\(`([^`]*)`\\)");
@@ -511,6 +465,16 @@ void DataTabWidget::changeTable(const QString& table_name)
     {
         model->setHeaderData(i, Qt::Orientation::Horizontal, "picture", Qt::UserRole + 1);
     });
+}
 
+void DataTabWidget::changeTable(const QString& table_name)
+{
+    current_table = table_name;
+    model->setTable(table_name);
+    model->setEditStrategy(QSqlTableModel::OnManualSubmit);
+    model->select();
+
+    changeFilterSearchTabs();
+    fillHeaderData();
 }
 
