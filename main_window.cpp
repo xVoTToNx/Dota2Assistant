@@ -84,7 +84,7 @@ bool MainWindow::configureDB()
     data_base.setHostName("127.0.0.1");
     data_base.setUserName("root");
     data_base.setPassword("root");
-    data_base.setPort(3306);
+    data_base.setPort(54000);
     data_base.setDatabaseName("dota");
 
     return data_base.open();

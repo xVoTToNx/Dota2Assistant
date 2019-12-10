@@ -63,8 +63,28 @@ DataTabWidget::DataTabWidget(QString&& name, QWidget *parent)
             MainWindow::ThrowError("Your query is... is.. is wrong! ＞︿＜");
             return;
         }
+
+        QRegExp reg_exp("\\* ?(from) ([^, ]*),");
+
+        reg_exp.indexIn(query_edit->toPlainText());
+        QStringList list = reg_exp.capturedTexts();
+
+        // If user enters "select * from heroes, skills" program will crush, so do not let him do it
+        auto iter = list.cbegin();
+        while(iter != list.cend())
+        {
+            if (*iter != QString(""))
+            {
+                MainWindow::ThrowError("Do not use '*' from two or more tables, please. (￣m￣）");
+                return;
+            }
+            ++iter;
+        }
+
         query_model->setQuery(QSqlQuery(qry));
         filter_model->setSourceModel(query_model);
+
+
         changeFilterSearchTabs();
         is_custom_query = true;
     });
@@ -355,7 +375,7 @@ void DataTabWidget::changeFilterSearchTabs()
             }
         }
 
-        if(filter_widget != nullptr && search_widget != nullptr)
+            if(filter_widget != nullptr && search_widget != nullptr)
         {
             filter_layout->addWidget(filter_widget, i, 1);
             QPushButton* filter_clearButton = new QPushButton("CLR");
