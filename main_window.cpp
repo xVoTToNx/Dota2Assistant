@@ -87,6 +87,9 @@ bool MainWindow::configureDB()
     data_base.setPort(54000);
     data_base.setDatabaseName("dota");
 
+    if(!data_base.open())
+        data_base.setPort(3306);
+
     return data_base.open();
 }
 

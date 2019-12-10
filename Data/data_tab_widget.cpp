@@ -324,16 +324,20 @@ void DataTabWidget::changeFilterSearchTabs()
     {
         QLabel* filter_label = new QLabel(current_model->headerData(i, Qt::Horizontal, Qt::DisplayRole).toString());
         filter_label->setMinimumHeight(40);
+        filter_label->setAlignment(Qt::AlignCenter);
         filter_layout->addWidget(filter_label, i, 0);
 
         QLabel* search_label = new QLabel(current_model->headerData(i, Qt::Horizontal, Qt::DisplayRole).toString());
         search_label->setMinimumHeight(40);
+        search_label->setAlignment(Qt::AlignCenter);
         search_layout->addWidget(search_label, i, 0);
 
         QWidget* filter_widget = nullptr;
         QWidget* search_widget = nullptr;
         auto filter_func = std::bind(&FilterProxyModel::setExpression, filter_model, i,std::placeholders::_1);
         auto search_func = std::bind(&SearchProxyModel::setExpression, search_model, i,std::placeholders::_1);
+        auto color_filter_func = std::bind(&QLabel::setStyleSheet, filter_label, QString("background-color: lime"));
+        auto color_search_func = std::bind(&QLabel::setStyleSheet, search_label, QString("background-color: lime"));
 
         switch (current_model->data(current_model->index(0, i)).type())
         {
@@ -341,51 +345,62 @@ void DataTabWidget::changeFilterSearchTabs()
             case QVariant::Type::Double: {
                 filter_widget = new QSpinBox();
                 connect(static_cast<QSpinBox*>(filter_widget), QOverload<const QString&>::of(&QSpinBox::valueChanged), filter_func);
+                connect(static_cast<QSpinBox*>(filter_widget), QOverload<const QString&>::of(&QSpinBox::valueChanged), color_filter_func);
                 search_widget = new QSpinBox();
                 connect(static_cast<QSpinBox*>(search_widget), QOverload<const QString&>::of(&QSpinBox::valueChanged), search_func);
+                connect(static_cast<QSpinBox*>(search_widget), QOverload<const QString&>::of(&QSpinBox::valueChanged), color_search_func);
                 break;
             }
             case QVariant::Type::String: {
                 filter_widget = new QLineEdit();
                 connect(static_cast<QLineEdit*>(filter_widget), &QLineEdit::textChanged, filter_func);
+                connect(static_cast<QLineEdit*>(filter_widget), &QLineEdit::textChanged, color_filter_func);
                 search_widget = new QLineEdit();
                 connect(static_cast<QLineEdit*>(search_widget), &QLineEdit::textChanged, search_func);
+                connect(static_cast<QLineEdit*>(search_widget), &QLineEdit::textChanged, color_search_func);
                 break;
             }
             case TY_QT_FOR_CHAR: {
                 filter_widget = new QSpinBox();
                 connect(static_cast<QSpinBox*>(filter_widget), QOverload<const QString&>::of(&QSpinBox::valueChanged), filter_func);
+                connect(static_cast<QSpinBox*>(filter_widget), QOverload<const QString&>::of(&QSpinBox::valueChanged), color_filter_func);
                 search_widget = new QSpinBox();
                 connect(static_cast<QSpinBox*>(search_widget), QOverload<const QString&>::of(&QSpinBox::valueChanged), search_func);
+                connect(static_cast<QSpinBox*>(search_widget), QOverload<const QString&>::of(&QSpinBox::valueChanged), color_search_func);
                 break;
             }
             case QVariant::Type::DateTime: {
                 filter_widget = new QDateTimeEdit();
                 connect(static_cast<QDateTimeEdit*>(filter_widget), &QDateTimeEdit::dateTimeChanged, [this, i]( const QDateTime &date)
-                {
-                    this->filter_model->setExpression(i, date.toString("yyyy-MM-dd hh:mm:ss"));
-                });
+                { this->filter_model->setExpression(i, date.toString("yyyy-MM-dd hh:mm:ss"));});
+                connect(static_cast<QDateTimeEdit*>(filter_widget), &QDateTimeEdit::dateTimeChanged, color_filter_func);
                 search_widget = new QDateTimeEdit();
                 connect(static_cast<QDateTimeEdit*>(search_widget), &QDateTimeEdit::dateTimeChanged, [this, i]( const QDateTime &date)
-                {
-                    this->search_model->setExpression(i, date.toString("yyyy-MM-dd hh:mm:ss"));
-
-                });
+                { this->search_model->setExpression(i, date.toString("yyyy-MM-dd hh:mm:ss")); });
+                connect(static_cast<QDateTimeEdit*>(search_widget), &QDateTimeEdit::dateTimeChanged, color_search_func);
                 break;
             }
         }
 
-            if(filter_widget != nullptr && search_widget != nullptr)
+        if(filter_widget != nullptr && search_widget != nullptr)
         {
             filter_layout->addWidget(filter_widget, i, 1);
             QPushButton* filter_clearButton = new QPushButton("CLR");
             filter_layout->addWidget(filter_clearButton, i, 2);
-            connect(filter_clearButton, &QPushButton::clicked, [this, i](){this->filter_model->setExpression(i, "");});
+            connect(filter_clearButton, &QPushButton::clicked, [this, i,filter_label]()
+            {
+                filter_label->setStyleSheet("background-color: transparent");
+                this->filter_model->setExpression(i, "");
+            });
 
             search_layout->addWidget(search_widget, i, 1);
             QPushButton* search_clr_button = new QPushButton("CLR");
             search_layout->addWidget(search_clr_button, i, 2);
-            connect(search_clr_button, &QPushButton::clicked, [this, i](){this->search_model->setExpression(i, "");});
+            connect(search_clr_button, &QPushButton::clicked, [this, i, search_label]()
+            {
+                search_label->setStyleSheet("background-color: transparent");
+                this->search_model->setExpression(i, "");
+            });
         }
     }
 

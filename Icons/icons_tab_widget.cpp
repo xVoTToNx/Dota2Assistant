@@ -39,8 +39,13 @@ IconsTabWidget::IconsTabWidget(QString&& name, QWidget *parent)
     table_layout->addLayout(icons_layout);
 
     QPushButton* heroes_button = new QPushButton("Heroes");
+    heroes_button->setMinimumSize(150, 60);
     QPushButton* items_button = new QPushButton("Items");
+    items_button->setMinimumSize(150, 60);
     QPushButton* teams_button = new QPushButton("Teams");
+    teams_button->setMinimumSize(150, 60);
+    QWidget* dummy_widget = new QWidget();
+    dummy_widget->setSizePolicy(QSizePolicy::Ignored, QSizePolicy::Expanding);
 
     connect(heroes_button, &QPushButton::clicked, [this](){updateTable(Icon::hero);});
     connect(items_button, &QPushButton::clicked, [this](){updateTable(Icon::item);});
@@ -49,6 +54,7 @@ IconsTabWidget::IconsTabWidget(QString&& name, QWidget *parent)
     button_layout->addWidget(heroes_button);
     button_layout->addWidget(items_button);
     button_layout->addWidget(teams_button);
+    button_layout->addWidget(dummy_widget);
 
     main_layout->addLayout(button_layout);
     main_layout->addLayout(table_layout);
@@ -90,7 +96,6 @@ void IconsTabWidget::updateTable(Icon icon)
         QString data = filter_model->data(filter_model->index(i,0)).toString();
         QString icon_path = filter_model->data(filter_model->index(i, 1)).toString();
         QToolButton* button = new QToolButton();
-        button->setToolButtonStyle(Qt::ToolButtonTextUnderIcon);
 
         button->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
         QVBoxLayout* button_icon_layout = new QVBoxLayout(button);
