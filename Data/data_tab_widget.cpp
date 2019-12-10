@@ -55,7 +55,8 @@ DataTabWidget::DataTabWidget(QString&& name, QWidget *parent)
     filter_search_tab_widget->setSizePolicy(spRight);
     layout->addWidget(filter_search_tab_widget);
 
-    connect(exec_button, &QPushButton::clicked, [this](){
+    connect(exec_button, &QPushButton::clicked, [this]()
+    {
         QSqlQuery qry(MainWindow::data_base);
         qry.prepare(query_edit->toPlainText());
         if(!qry.exec())
@@ -82,17 +83,18 @@ DataTabWidget::DataTabWidget(QString&& name, QWidget *parent)
         }
 
         query_model->setQuery(QSqlQuery(qry));
-        filter_model->setSourceModel(query_model);
 
+        exec_button->setStyleSheet("background-color: lime");
 
-        changeFilterSearchTabs();
         is_custom_query = true;
+        changeTable(current_table);
     });
-    connect(clr_button, &QPushButton::clicked, [this](){
-        query_edit->setText(""); changeTable(current_table);
-        filter_model->setSourceModel(model);
-        changeFilterSearchTabs();
+    connect(clr_button, &QPushButton::clicked, [this]()
+    {
+        exec_button->setStyleSheet("");
+
         is_custom_query = false;
+        changeTable(current_table);
     });
     connect(insert_button, &QPushButton::clicked, this, &DataTabWidget::insertRow);
     connect(remove_button, &QPushButton::clicked, this, &DataTabWidget::removeRow);
@@ -100,7 +102,9 @@ DataTabWidget::DataTabWidget(QString&& name, QWidget *parent)
     table_combobox->setSizePolicy(QSizePolicy::Expanding, table_combobox->sizePolicy().verticalPolicy());
     table_combobox->addItems(MainWindow::data_base.tables());
     table_combobox->setCurrentText("heroes");
+    auto color_exec_func = std::bind(&QPushButton::setStyleSheet, exec_button, QString(""));
     connect(table_combobox, &QComboBox::currentTextChanged, this, &DataTabWidget::changeTable);
+    connect(table_combobox, &QComboBox::currentTextChanged, this, color_exec_func);
 
     filter_model->setSourceModel(model);
     filter_model->setDynamicSortFilter(false);
@@ -124,7 +128,6 @@ DataTabWidget::DataTabWidget(QString&& name, QWidget *parent)
 
 void DataTabWidget::insertRow()
 {
-    // CHECK IF WE ADDINT INTO QUERY!!!!!!!!!!!!!!!!!!!!!!!
     bool was_closed = true;
 
     QString query_test = "INSERT INTO " + model->tableName() + " VALUES (";
@@ -221,6 +224,7 @@ void DataTabWidget::insertRow()
 void DataTabWidget::removeRow()
 {
     QModelIndex index = table_view->currentIndex();
+    int right_index = table_view->model()->headerData(index.row(), Qt::Vertical, 0).toInt() - 1;
     if(index.isValid())
         if(index.row() > - 1)
         {
@@ -232,7 +236,7 @@ void DataTabWidget::removeRow()
                 size_t i = 0;
                 for(; i < model->columnCount(); ++i)
                 {
-                    QVariant value = model->data(model->index(index.row(), i));
+                    QVariant value = model->data(model->index(right_index, i));
                     if(value.type() == QVariant::Type::DateTime)
                         continue;
                     QString str_value = value.type() == QVariant::Type::String ?
@@ -389,7 +393,7 @@ void DataTabWidget::changeFilterSearchTabs()
             filter_layout->addWidget(filter_clearButton, i, 2);
             connect(filter_clearButton, &QPushButton::clicked, [this, i,filter_label]()
             {
-                filter_label->setStyleSheet("background-color: transparent");
+                filter_label->setStyleSheet("");
                 this->filter_model->setExpression(i, "");
             });
 
@@ -398,7 +402,7 @@ void DataTabWidget::changeFilterSearchTabs()
             search_layout->addWidget(search_clr_button, i, 2);
             connect(search_clr_button, &QPushButton::clicked, [this, i, search_label]()
             {
-                search_label->setStyleSheet("background-color: transparent");
+                search_label->setStyleSheet("");
                 this->search_model->setExpression(i, "");
             });
         }
@@ -509,7 +513,13 @@ void DataTabWidget::changeTable(const QString& table_name)
     model->setEditStrategy(QSqlTableModel::OnManualSubmit);
     model->select();
 
+    is_custom_query ? filter_model->setSourceModel(query_model)
+                    : filter_model->setSourceModel(model);
+
+
     changeFilterSearchTabs();
     fillHeaderData();
+
+    is_custom_query = false;
 }
 
