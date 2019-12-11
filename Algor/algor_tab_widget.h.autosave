@@ -62,6 +62,7 @@ public:
 private:
     void updateHeroesList(QString const& team_name);
     void updateHeroRolesList(QString& hero_name, QString& picture_path);
+    void updateStatsPlot();
     void configureStatsPlot();
 
 private slots:

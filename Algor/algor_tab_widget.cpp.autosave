@@ -57,6 +57,11 @@ AlgorTabWidget::AlgorTabWidget(QString &&name, QWidget *parent)
 
 void AlgorTabWidget::updateHeroesList(QString const& team_name)
 {
+    heroes_list->clear();
+    QLayoutItem* item;
+    while ((item = heroes_icons_layout->takeAt(0)) != nullptr)
+    {delete item->widget();delete item;}
+    
     QSqlQuery qry;
     qry.prepare("select picture_path, heroes.hero_name from team_heroes, heroes where team_name = '" + team_name + "' "
                                                                                 "and heroes.hero_name = team_heroes.hero_name");
@@ -148,6 +153,52 @@ void AlgorTabWidget::updateHeroRolesList(QString &hero_name, QString& picture_pa
     heroes_list->setItemWidget(item, list_widget);
 }
 
+void AlgorTabWidget::updateStatsPlot()
+{
+    double max_value = 0;
+
+    role_degree_map.clear();
+    ticks.clear();
+    labels.clear();
+    current_role_data.clear();
+    desired_role_data.clear();
+
+    QSqlQuery qry_role(MainWindow::data_base);
+    qry_role.prepare(QString("select role_name, degree_of_affiliation from hero_roles"
+                             " where hero_name in (select hero_name from team_heroes where team_name = '" + team_name + "')"));
+    qry_role.exec();
+    while(qry_role.next())
+    {
+        QString role = qry_role.value("role_name").toString();
+        if(!role_degree_map.keys().contains(role))
+            role_degree_map.insert(role, qry_role.value("degree_of_affiliation").toInt());
+        else
+            role_degree_map[role] += qry_role.value("degree_of_affiliation").toInt();
+    }
+
+    for (auto i = role_degree_map.begin(); i != role_degree_map.end(); ++i)
+    {
+        max_value = max_value < i.value() ? i.value() : max_value;
+
+        labels << i.key();
+        ticks << labels.count() - 0.5;
+        current_role_data << i.value();
+        desired_role_data << i.value();
+    }
+
+    current_team_bar->setData(ticks, current_role_data);
+    desired_team_bar->setData(ticks, desired_role_data);
+
+    QSharedPointer<QCPAxisTickerText> textTicker(new QCPAxisTickerText);
+    textTicker->addTicks(ticks, labels);
+    stats->xAxis->setTicker(textTicker);
+    stats->yAxis->setRange(0, max_value + 1);
+
+    stats->rescaleAxes();
+    stats->replot();
+    stats->setFixedHeight(225);
+}
+
 void AlgorTabWidget::configureStatsPlot()
 {
     QLinearGradient gradient(0, 0, 0, 400);
@@ -207,56 +258,9 @@ void AlgorTabWidget::updateTable(QString team_name)
     if(team_name == "")
         return;
     current_team = team_name;
-    heroes_list->clear();
-
-    QLayoutItem* item;
-    while ((item = heroes_icons_layout->takeAt(0)) != nullptr)
-    {delete item->widget();delete item;}
 
     updateHeroesList(team_name);
-
-    double max_value = 0;
-
-    role_degree_map.clear();
-    ticks.clear();
-    labels.clear();
-    current_role_data.clear();
-    desired_role_data.clear();
-
-    QSqlQuery qry_role(MainWindow::data_base);
-    qry_role.prepare(QString("select role_name, degree_of_affiliation from hero_roles"
-                             " where hero_name in (select hero_name from team_heroes where team_name = '" + team_name + "')"));
-    qry_role.exec();
-    while(qry_role.next())
-    {
-        QString role = qry_role.value("role_name").toString();
-        if(!role_degree_map.keys().contains(role))
-            role_degree_map.insert(role, qry_role.value("degree_of_affiliation").toInt());
-        else
-            role_degree_map[role] += qry_role.value("degree_of_affiliation").toInt();
-    }
-
-    for (auto i = role_degree_map.begin(); i != role_degree_map.end(); ++i)
-    {
-        max_value = max_value < i.value() ? i.value() : max_value;
-
-        labels << i.key();
-        ticks << labels.count() - 0.5;
-        current_role_data << i.value();
-        desired_role_data << i.value();
-    }
-
-    current_team_bar->setData(ticks, current_role_data);
-    desired_team_bar->setData(ticks, desired_role_data);
-
-    QSharedPointer<QCPAxisTickerText> textTicker(new QCPAxisTickerText);
-    textTicker->addTicks(ticks, labels);
-    stats->xAxis->setTicker(textTicker);
-    stats->yAxis->setRange(0, max_value + 1);
-
-    stats->rescaleAxes();
-    stats->replot();
-    stats->setFixedHeight(225);
+    updateStatsPlot();
 }
 
 void AlgorTabWidget::CLR()
