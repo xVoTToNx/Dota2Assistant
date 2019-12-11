@@ -439,7 +439,7 @@ void DataTabWidget::changeFilterSearchTabs()
     filter_layout->addWidget(filter_dummy_widget, i, 0, 1, 2);
     search_layout->addWidget(search_dummy_widget, i, 0, 1, 3);
 
-    QPushButton* searchButton = new QPushButton("CLR");
+    QPushButton* searchButton = new QPushButton("SEARCH");
     search_layout->addWidget(searchButton, i + 1, 0, 1, 3);
     connect(searchButton, &QPushButton::clicked, [this](){this->search_model->Search();});
 }

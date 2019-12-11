@@ -38,7 +38,7 @@ private:
             QVBoxLayout* heroes_buttons_layout;
                 QPushButton* rand_button;
                 QPushButton* clear_button;
-                QPushButton* save_button;
+                QPushButton* roles_button;
 
         QListWidget* heroes_list;
         QCustomPlot* stats;
@@ -60,15 +60,16 @@ public:
     QString GetName() { return name; }
 
 private:
-    void updateHeroesList(QString const& team_name);
+    void updateHeroesList();
     void updateHeroRolesList(QString& hero_name, QString& picture_path);
+    void updateStatsPlot();
     void configureStatsPlot();
 
 private slots:
     void updateTable(QString team_name);
     void MAGIC();
     void CLR();
-    void SAVE();
+    void openRolesForm();
     void PRINT();
 };
 
