@@ -55,53 +55,16 @@ DataTabWidget::DataTabWidget(QString&& name, QWidget *parent)
     filter_search_tab_widget->setSizePolicy(spRight);
     layout->addWidget(filter_search_tab_widget);
 
-    connect(exec_button, &QPushButton::clicked, [this]()
-    {
-        QSqlQuery qry(MainWindow::data_base);
-        qry.prepare(query_edit->toPlainText());
-        if(!qry.exec())
-        {
-            MainWindow::ThrowError("Your query is... is.. is wrong! ＞︿＜");
-            return;
-        }
-
-        QRegExp reg_exp("\\* ?(from) ([^, ]*),");
-
-        reg_exp.indexIn(query_edit->toPlainText());
-        QStringList list = reg_exp.capturedTexts();
-
-        // If user enters "select * from heroes, skills" program will crush, so do not let him do it
-        auto iter = list.cbegin();
-        while(iter != list.cend())
-        {
-            if (*iter != QString(""))
-            {
-                MainWindow::ThrowError("Do not use '*' from two or more tables, please. (￣m￣）");
-                return;
-            }
-            ++iter;
-        }
-
-        query_model->setQuery(QSqlQuery(qry));
-
-        exec_button->setStyleSheet("background-color: lime");
-
-        is_custom_query = true;
-        changeTable(current_table);
-    });
-    connect(clr_button, &QPushButton::clicked, [this]()
-    {
-        exec_button->setStyleSheet("");
-
-        is_custom_query = false;
-        changeTable(current_table);
-    });
+    connect(exec_button, &QPushButton::clicked, this, &DataTabWidget::execQuery);
+    connect(clr_button, &QPushButton::clicked, this, &DataTabWidget::clrQuery);
     connect(insert_button, &QPushButton::clicked, this, &DataTabWidget::insertRow);
     connect(remove_button, &QPushButton::clicked, this, &DataTabWidget::removeRow);
     connect(print_button, &QPushButton::clicked, this, &DataTabWidget::printTable);
+
     table_combobox->setSizePolicy(QSizePolicy::Expanding, table_combobox->sizePolicy().verticalPolicy());
     table_combobox->addItems(MainWindow::data_base.tables());
     table_combobox->setCurrentText("heroes");
+
     auto color_exec_func = std::bind(&QPushButton::setStyleSheet, exec_button, QString(""));
     connect(table_combobox, &QComboBox::currentTextChanged, this, &DataTabWidget::changeTable);
     connect(table_combobox, &QComboBox::currentTextChanged, this, color_exec_func);
@@ -115,7 +78,7 @@ DataTabWidget::DataTabWidget(QString&& name, QWidget *parent)
     table_view->setModel(search_model);
     table_view->setSortingEnabled(true);
 
-    table_view->setItemDelegate(new DataItemDelegate(model, table_view));
+    table_view->setItemDelegate(new DataItemDelegate(model, table_view, table_view));
 
     filter_tab_widget->setLayout(new QGridLayout());
     filter_search_tab_widget->addTab(filter_tab_widget, "Filter");
@@ -169,8 +132,19 @@ void DataTabWidget::insertRow()
                 widgets.push_back(edit);
                 break;
             }
+            case QVariant::Type::Double:
             case QVariant::Type::Int:
             {
+                // Value is bool type
+                if(model->headerData(i, Qt::Orientation::Horizontal, Qt::UserRole + 1) == "boolean")
+                {
+                    QRadioButton* edit = new QRadioButton();
+                    layout->addWidget(edit);
+                    widgets.push_back(edit);
+                    break;
+                }
+
+                // Value is int/double type
                 QSpinBox* edit = new QSpinBox();
                 layout->addWidget(edit);
                 widgets.push_back(edit);
@@ -186,14 +160,10 @@ void DataTabWidget::insertRow()
         for(size_t i = 0; i < model->columnCount(); ++i)
         {
             QString value = "DEFAULT";
-            qDebug()<<model->headerData(i, Qt::Orientation::Horizontal, Qt::UserRole + 3).toString();
             if(model->headerData(i, Qt::Orientation::Horizontal, Qt::UserRole + 3).toString() == "primary")
             {
                 QByteArray n = widgets[widgets_i]->metaObject()->userProperty().name();
-                value = widgets[widgets_i]->property(n).toString();
-
-                if(widgets[widgets_i]->property(n).type() == QVariant::Type::String)
-                    value = "'" + value + "'";
+                value = MainWindow::VariantToSql(widgets[widgets_i]->property(n));
 
                 ++widgets_i;
             }
@@ -214,10 +184,8 @@ void DataTabWidget::insertRow()
     qry.prepare(query_test);
 
     if(!qry.exec())
-    {
-        MainWindow::ThrowError("Something went wrong... Sooorry...<( _ _ )>");
-        qDebug()<<qry.lastQuery();
-    }
+        MainWindow::ThrowError(qry.lastError().text());
+
     changeTable(model->tableName());
 }
 
@@ -253,6 +221,49 @@ void DataTabWidget::removeRow()
             return;
         }
     MainWindow::ThrowError("Invalid row. Sorry /(ㄒoㄒ)/~~");
+}
+
+void DataTabWidget::execQuery()
+{
+    QSqlQuery qry(MainWindow::data_base);
+    qry.prepare(query_edit->toPlainText());
+    if(!qry.exec())
+    {
+        MainWindow::ThrowError(qry.lastError().text());
+        return;
+    }
+
+    QRegExp reg_exp("\\* ?(from) ([^, ]*),");
+
+    reg_exp.indexIn(query_edit->toPlainText());
+    QStringList list = reg_exp.capturedTexts();
+
+    // If user enters "select * from heroes, skills" program will crush, so do not let him do it
+    auto iter = list.cbegin();
+    while(iter != list.cend())
+    {
+        if (*iter != QString(""))
+        {
+            MainWindow::ThrowError("Do not use '*' from two or more tables, please. (￣m￣）");
+            return;
+        }
+        ++iter;
+    }
+
+    query_model->setQuery(QSqlQuery(qry));
+
+    exec_button->setStyleSheet("background-color: lime");
+
+    is_custom_query = true;
+    changeTable(current_table);
+}
+
+void DataTabWidget::clrQuery()
+{
+    exec_button->setStyleSheet("");
+
+    is_custom_query = false;
+    changeTable(current_table);
 }
 
 void DataTabWidget::printTable()
@@ -347,6 +358,21 @@ void DataTabWidget::changeFilterSearchTabs()
         {
             case QVariant::Type::Int:
             case QVariant::Type::Double: {
+                // Value is bool type
+                if(model->headerData(i, Qt::Orientation::Horizontal, Qt::UserRole + 1) == "boolean")
+                {
+                    filter_widget = new QRadioButton();
+                    connect(static_cast<QRadioButton*>(filter_widget), &QRadioButton::toggled, [this, i]( const bool &exp)
+                    { this->filter_model->setExpression(i, exp ? "1" : "0"); });
+                    connect(static_cast<QRadioButton*>(filter_widget), &QRadioButton::toggled, color_filter_func);
+                    search_widget = new QRadioButton();
+                    connect(static_cast<QRadioButton*>(search_widget), &QRadioButton::toggled, [this, i]( const bool &exp)
+                    { this->search_model->setExpression(i, exp ? "1" : "0"); });
+                    connect(static_cast<QRadioButton*>(search_widget), &QRadioButton::toggled, color_search_func);
+                    break;
+                }
+
+                //Value is int / double type
                 filter_widget = new QSpinBox();
                 connect(static_cast<QSpinBox*>(filter_widget), QOverload<const QString&>::of(&QSpinBox::valueChanged), filter_func);
                 connect(static_cast<QSpinBox*>(filter_widget), QOverload<const QString&>::of(&QSpinBox::valueChanged), color_filter_func);
@@ -446,7 +472,7 @@ void DataTabWidget::fillHeaderData()
     qry.exec("SHOW CREATE TABLE " + current_table);
     qry.next();
     QString show_create_table = qry.value(1).toString().toLower();
-    //qDebug()<<show_create_table;
+    qDebug()<<show_create_table;
 
     // PRIMARY KEYS
     QRegExp primary_reg_exp("primary key \\(([^\\)]*)\\)");
@@ -491,6 +517,24 @@ void DataTabWidget::fillHeaderData()
         model->setHeaderData(i, Qt::Orientation::Horizontal, combo_list, Qt::UserRole + 2);
     });
 
+   // TINYINTS
+    QRegExp tinyints_reg_exp("`([^`]*)` tinyint\\(1\\)");
+    addHeaderData(show_create_table, tinyints_reg_exp, [](QStringList& list, int i, QSqlTableModel* model)
+    {
+        model->setHeaderData(i, Qt::Orientation::Horizontal, "boolean", Qt::UserRole + 1);
+        QStringList combo_list {"true", "false"};
+        model->setHeaderData(i, Qt::Orientation::Horizontal, combo_list, Qt::UserRole + 2);
+    });
+
+    // BOOLEANS
+     QRegExp booleans_reg_exp("`([^`]*)` tinyint\\(1\\)");
+     addHeaderData(show_create_table, booleans_reg_exp, [](QStringList& list, int i, QSqlTableModel* model)
+     {
+         model->setHeaderData(i, Qt::Orientation::Horizontal, "boolean", Qt::UserRole + 1);
+         QStringList combo_list {"true", "false"};
+         model->setHeaderData(i, Qt::Orientation::Horizontal, combo_list, Qt::UserRole + 2);
+     });
+
     // GENERATED
     QRegExp genereate_reg_exp("`([^`]*)` ([^ ]*) generated");
     addHeaderData(show_create_table, genereate_reg_exp, [](QStringList& list, int i, QSqlTableModel* model)
@@ -517,8 +561,8 @@ void DataTabWidget::changeTable(const QString& table_name)
                     : filter_model->setSourceModel(model);
 
 
-    changeFilterSearchTabs();
     fillHeaderData();
+    changeFilterSearchTabs();
 
     is_custom_query = false;
 }

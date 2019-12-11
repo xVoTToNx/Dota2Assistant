@@ -76,6 +76,8 @@ public:
 private:
     void insertRow();
     void removeRow();
+    void execQuery();
+    void clrQuery();
     void printTable();
     void changeFilterSearchTabs();
     void addHeaderData(QString& source, QRegExp reg_exp, void (*data_handler)(QStringList& list, int i, QSqlTableModel* model));

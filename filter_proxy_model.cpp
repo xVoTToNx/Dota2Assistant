@@ -17,6 +17,7 @@ bool FilterProxyModel::filterAcceptsRow(int sourceRow, const QModelIndex &source
         if(expressions[i].pattern() != "")
             isAccepted = isAccepted && str.toLower().contains(expressions[i]);
     }
+
     return isAccepted;
 }
 

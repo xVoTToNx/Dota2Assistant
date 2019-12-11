@@ -12,6 +12,37 @@ QLabel* MainWindow::CreateLabel(QString text)
     return label;
 }
 
+QString MainWindow::VariantToSql(QVariant value, QVariant::Type type)
+{
+    if(type == QVariant::UserType)
+        type = value.type();
+
+    switch(type)
+    {
+    case QVariant::Type::String:
+        return "'" + value.toString() + "'";
+
+    case QVariant::Type::Int:
+    case QVariant::Type::UInt:
+    case QVariant::Type::LongLong:
+    case QVariant::Type::ULongLong:
+    case QVariant::Type::Double:
+        return value.toString();
+
+    case QVariant::Type::Date:
+        return "'" + value.toDate().toString("yyyy-MM-dd") + "'";
+
+    case QVariant::Type::DateTime:
+        return "'" + value.toDateTime().toString("yyyy-MM-dd hh:mm:ss") + "'";
+
+    case QVariant::Type::Bool:
+        return value.toString() == "true" ? "1" : "0";
+
+    default:
+        return "";
+    }
+}
+
 void MainWindow::ThrowError(QString &&text)
 {
     QMessageBox box;

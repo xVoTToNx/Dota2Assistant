@@ -27,6 +27,7 @@ public:
     static void ThrowError(QString&& text);
     static int ThrowQuestion(QString &&text);
     static QLabel* CreateLabel(QString text);
+    static QString VariantToSql(QVariant value, QVariant::Type type = QVariant::Type::UserType);
 
     QTabWidget* main_tab_widget;
 
