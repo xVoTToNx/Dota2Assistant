@@ -102,7 +102,6 @@ void DataItemDelegate::setModelData(QWidget *editor, QAbstractItemModel *model, 
     for(int i = 0; i < sql_model->columnCount(); ++i)
     {
         QVariant vvalue = getModelData(proper_index, i);
-        qDebug()<<vvalue;
         QString value_to_add = MainWindow::VariantToSql(vvalue);
 
         qry_text += HEADER(sql_model,i) + " = " + value_to_add + " and ";

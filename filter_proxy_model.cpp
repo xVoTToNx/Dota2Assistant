@@ -15,7 +15,13 @@ bool FilterProxyModel::filterAcceptsRow(int sourceRow, const QModelIndex &source
         QString str = sourceModel()->data(index).toString();
 
         if(expressions[i].pattern() != "")
+        {
+            qDebug()<<expressions[i].pattern();
+            qDebug()<<str.toLower();
+            qDebug()<<str.toLower().contains(expressions[i]);
+            qDebug()<<"FIN\n";
             isAccepted = isAccepted && str.toLower().contains(expressions[i]);
+        }
     }
 
     return isAccepted;

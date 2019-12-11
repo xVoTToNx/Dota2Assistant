@@ -205,10 +205,7 @@ void DataTabWidget::removeRow()
                 for(; i < model->columnCount(); ++i)
                 {
                     QVariant value = model->data(model->index(right_index, i));
-                    if(value.type() == QVariant::Type::DateTime)
-                        continue;
-                    QString str_value = value.type() == QVariant::Type::String ?
-                                        "'" + value.toString() + "'" : value.toString();
+                    QString str_value = MainWindow::VariantToSql(value);
                     query_text += HEADER(model, i) + " = " + str_value + " AND ";
                 }
                 QSqlQuery qry;
@@ -399,15 +396,15 @@ void DataTabWidget::changeFilterSearchTabs()
                 connect(static_cast<QSpinBox*>(search_widget), QOverload<const QString&>::of(&QSpinBox::valueChanged), color_search_func);
                 break;
             }
-            case QVariant::Type::DateTime: {
-                filter_widget = new QDateTimeEdit();
-                connect(static_cast<QDateTimeEdit*>(filter_widget), &QDateTimeEdit::dateTimeChanged, [this, i]( const QDateTime &date)
-                { this->filter_model->setExpression(i, date.toString("yyyy-MM-dd hh:mm:ss"));});
-                connect(static_cast<QDateTimeEdit*>(filter_widget), &QDateTimeEdit::dateTimeChanged, color_filter_func);
-                search_widget = new QDateTimeEdit();
-                connect(static_cast<QDateTimeEdit*>(search_widget), &QDateTimeEdit::dateTimeChanged, [this, i]( const QDateTime &date)
-                { this->search_model->setExpression(i, date.toString("yyyy-MM-dd hh:mm:ss")); });
-                connect(static_cast<QDateTimeEdit*>(search_widget), &QDateTimeEdit::dateTimeChanged, color_search_func);
+            case QVariant::Type::Date: {
+                filter_widget = new QDateEdit();
+                connect(static_cast<QDateEdit*>(filter_widget), &QDateEdit::dateChanged, [this, i]( const QDate &date)
+                { this->filter_model->setExpression(i, date.toString("(yyyy-)|(-MM-)|(-dd)"));});
+                connect(static_cast<QDateEdit*>(filter_widget), &QDateEdit::dateChanged, color_filter_func);
+                search_widget = new QDateEdit();
+                connect(static_cast<QDateEdit*>(search_widget), &QDateEdit::dateChanged, [this, i]( const QDate &date)
+                { this->search_model->setExpression(i, date.toString("yyyy-MM-dd")); });
+                connect(static_cast<QDateEdit*>(search_widget), &QDateEdit::dateChanged, color_search_func);
                 break;
             }
         }
