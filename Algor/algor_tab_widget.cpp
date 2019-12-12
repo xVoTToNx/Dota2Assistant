@@ -5,8 +5,13 @@ AlgorTabWidget::AlgorTabWidget(QString &&name, QWidget *parent)
     : QWidget(parent)
     , name (name)
     , current_team("")
+    , current_hero(-1)
     , layout (new QVBoxLayout())
     , team_label_layout (new QHBoxLayout)
+    , choose_hero_button (new QToolButton(this))
+    , algor_hero_button (new QPushButton("ALG", this))
+    , clear_hero_button (new QPushButton("CLR", this))
+    , info_hero_button (new QPushButton("INFO", this))
     , team_label (new QLabel("Team: ", this))
     , team_name (new QComboBox(this))
     , heroes_layout (new QHBoxLayout())
@@ -14,14 +19,23 @@ AlgorTabWidget::AlgorTabWidget(QString &&name, QWidget *parent)
     , heroes_buttons_layout (new QVBoxLayout())
     , rand_button (new QPushButton("RAND", this))
     , clear_button (new QPushButton("CLR", this))
-    , roles_button (new QPushButton("ROLES", this))
-    , heroes_list (new QListWidget(this))
+    , roles_button (new QToolButton(this))
+    , hero_roles_list (new QListWidget(this))
     , stats (new QCustomPlot())
     , bar_group (new QCPBarsGroup(stats))
     , current_team_bar (new QCPBars(stats->xAxis, stats->yAxis))
     , desired_team_bar (new QCPBars(stats->xAxis, stats->yAxis))
     , print_button (new QPushButton("PRINT", this))
 {
+    choose_hero_button->setText("PICK");
+
+    for(int i = 0; i < 5; ++i)
+        team_heroes.push_back(nullptr);
+
+    team_label_layout->addWidget(choose_hero_button);
+    team_label_layout->addWidget(algor_hero_button);
+    team_label_layout->addWidget(clear_hero_button);
+    team_label_layout->addWidget(info_hero_button);
     team_label_layout->addWidget(team_label);
     team_label_layout->addWidget(team_name);
 
@@ -31,7 +45,6 @@ AlgorTabWidget::AlgorTabWidget(QString &&name, QWidget *parent)
     while(qry.next())
         team_name->addItem(qry.value(0).toString());
 
-
     heroes_buttons_layout->addWidget(rand_button);
     heroes_buttons_layout->addWidget(clear_button);
     heroes_buttons_layout->addWidget(roles_button);
@@ -40,28 +53,68 @@ AlgorTabWidget::AlgorTabWidget(QString &&name, QWidget *parent)
     heroes_layout->addLayout(heroes_buttons_layout);
     layout->addLayout(team_label_layout);
     layout->addLayout(heroes_layout);
-    layout->addWidget(heroes_list);
+    layout->addWidget(hero_roles_list);
     layout->addWidget(stats);
+
+    rand_button->setFixedSize(150, 30);
+    clear_button->setFixedSize(150, 30);
+    print_button->setFixedSize(150, 30);
+    roles_button->setFixedSize(150, 30);
+    roles_button->setText("ROLES");
+    roles_button->setCheckable(true);
+    roles_button->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Maximum);
 
     connect(rand_button, &QPushButton::clicked, this, &AlgorTabWidget::MAGIC);
     connect(clear_button, &QPushButton::clicked, this, &AlgorTabWidget::CLR);
-    connect(roles_button, &QPushButton::clicked, this, &AlgorTabWidget::openRolesForm);
+    connect(roles_button, &QToolButton::clicked, this, &AlgorTabWidget::openRolesForm);
     connect(print_button, &QPushButton::clicked, this, &AlgorTabWidget::PRINT);
     connect(team_name, &QComboBox::currentTextChanged, this, &AlgorTabWidget::updateTable);
 
+    current_team = team_name->itemText(0);
     configureStatsPlot();
 
     updateTable(team_name->itemText(0));
     setLayout(layout);
 }
 
+AlgorTabWidget::~AlgorTabWidget()
+{
+    for(int i = 0; i < 5; ++i)
+        delete team_heroes[i];
+}
+
+void AlgorTabWidget::replotStatsPlot(int is_data_changed)
+{
+    if(is_data_changed & 0x0001)
+        current_team_bar->setData(ticks, current_role_data);
+    if(is_data_changed & 0x0002)
+        desired_team_bar->setData(ticks, desired_role_data);
+
+    stats->rescaleAxes();
+    stats->replot();
+}
+
 void AlgorTabWidget::updateHeroesList()
 {
-    heroes_list->clear();
+    hero_roles_list->clear();
     QLayoutItem* item;
     while ((item = heroes_icons_layout->takeAt(0)) != nullptr)
-    {delete item->widget();delete item;}
+    {}
 
+    for(int i = 0; i < 5; ++i)
+    {
+        heroes_icons_layout->addWidget(team_heroes[i], 0, i);
+        if(!team_heroes[i]->property("is_dummy").toBool())
+        {
+            QString hero_name = team_heroes[i]->property("hero_name").toString();
+            QString icon_path = team_heroes[i]->property("picture_path").toString();
+            updateHeroRolesList(hero_name, icon_path);
+        }
+    }
+}
+
+void AlgorTabWidget::configureHeroesList()
+{
     QSqlQuery qry;
     qry.prepare("select picture_path, heroes.hero_name from team_heroes, heroes where team_name = '" + current_team + "' "
                                                                                 "and heroes.hero_name = team_heroes.hero_name");
@@ -69,14 +122,17 @@ void AlgorTabWidget::updateHeroesList()
     int i = 0;
     while(i < 5)
     {
+        QToolButton* button = new QToolButton();
+
         if(qry.next())
         {
             QString hero_name = qry.value("hero_name").toString();
             QString icon_path = qry.value("picture_path").toString();
-            QToolButton* button = new QToolButton();
-            button->setMaximumHeight(140);
-            button->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
-            button->setToolButtonStyle(Qt::ToolButtonTextUnderIcon);
+
+            button->setProperty("hero_name", hero_name);
+            button->setProperty("picture_path", icon_path);
+            button->setProperty("is_dummy", false);
+            button->setProperty("style", "");
 
             QVBoxLayout* button_icon_layout = new QVBoxLayout(button);
             QLabel* name = new QLabel(hero_name, button);
@@ -92,27 +148,41 @@ void AlgorTabWidget::updateHeroesList()
 
             button_icon_layout->addWidget(name);
             button_icon_layout->setAlignment(Qt::AlignHCenter);
-
-            connect(button, &QPushButton::clicked, [hero_name](){
-                auto icon = HeroIcon::CreateMe(hero_name);
-                icon->setAttribute(Qt::WA_DeleteOnClose);
-                icon->show(); });
-
-            heroes_icons_layout->addWidget(button, 0, i);
-
-            updateHeroRolesList(hero_name, icon_path);
         }
         else
         {
-            QToolButton* empty_hero = new QToolButton(this);
-            empty_hero->setText("Dummy");
-            empty_hero->setMaximumHeight(140);
-            empty_hero->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
-            empty_hero->setStyleSheet("background-color: gray");
-            heroes_icons_layout->addWidget(empty_hero, 0, i);
+            button->setText("Dummy");
+
+            button->setStyleSheet("background-color: gray");
+
+            button->setProperty("is_dummy", true);
+            button->setProperty("style", "background-color: gray");
         }
+
+        button->setMaximumHeight(140);
+        button->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+
+        connect(button, &QToolButton::clicked, [this, i]()
+        { changeCurrentHero(i); });
+
+        if(team_heroes[i])
+            delete team_heroes[i];
+
+        team_heroes[i] = button;
+
         ++i;
     }
+
+    updateHeroesList();
+}
+
+void AlgorTabWidget::changeCurrentHero(int new_hero_index)
+{
+    if(current_hero != -1)
+        team_heroes[current_hero]->setStyleSheet(team_heroes[current_hero]->property("style").toString());
+
+    current_hero = new_hero_index;
+    team_heroes[current_hero]->setStyleSheet("background-color: lime");
 }
 
 void AlgorTabWidget::updateHeroRolesList(QString &hero_name, QString& picture_path)
@@ -149,11 +219,11 @@ void AlgorTabWidget::updateHeroRolesList(QString &hero_name, QString& picture_pa
 
     QListWidgetItem* item = new QListWidgetItem();
     item->setSizeHint({400, 120});
-    heroes_list->addItem(item);
-    heroes_list->setItemWidget(item, list_widget);
+    hero_roles_list->addItem(item);
+    hero_roles_list->setItemWidget(item, list_widget);
 }
 
-void AlgorTabWidget::updateStatsPlot()
+void AlgorTabWidget::updateStatsPlot(bool update_desired)
 {
     double max_value = 0;
 
@@ -161,19 +231,32 @@ void AlgorTabWidget::updateStatsPlot()
     ticks.clear();
     labels.clear();
     current_role_data.clear();
-    desired_role_data.clear();
+
+    if(update_desired)
+        desired_role_data.clear();
 
     QSqlQuery qry_role(MainWindow::data_base);
-    qry_role.prepare(QString("select role_name, degree_of_affiliation from hero_roles"
-                             " where hero_name in (select hero_name from team_heroes where team_name = '" + current_team + "') order by role_name"));
+    qry_role.prepare(QString
+    (
+    "select roles.role_name as any_role, degree from "
+            "( "
+                "select role_name as role, degree_of_affiliation as degree from hero_roles where hero_name in "
+                "( "
+                    "select hero_name from team_heroes where team_name = '" + current_team + "' "
+                ") "
+            ") "
+           "as rroles right join roles on role = role_name order by any_role; "
+    ));
+
     qry_role.exec();
     while(qry_role.next())
     {
-        QString role = qry_role.value("role_name").toString();
+        QString role = qry_role.value("any_role").toString();
+
         if(!role_degree_map.keys().contains(role))
-            role_degree_map.insert(role, qry_role.value("degree_of_affiliation").toInt());
+            role_degree_map.insert(role, qry_role.value("degree").toInt());
         else
-            role_degree_map[role] += qry_role.value("degree_of_affiliation").toInt();
+            role_degree_map[role] += qry_role.value("degree").toInt();
     }
 
     for (auto i = role_degree_map.begin(); i != role_degree_map.end(); ++i)
@@ -183,20 +266,23 @@ void AlgorTabWidget::updateStatsPlot()
         labels << i.key();
         ticks << labels.count() - 0.5;
         current_role_data << i.value();
-        desired_role_data << i.value();
+
+        if(update_desired)
+            desired_role_data << i.value();
     }
 
     current_team_bar->setData(ticks, current_role_data);
-    desired_team_bar->setData(ticks, desired_role_data);
+
+    if(update_desired)
+        desired_team_bar->setData(ticks, desired_role_data);
 
     QSharedPointer<QCPAxisTickerText> textTicker(new QCPAxisTickerText);
     textTicker->addTicks(ticks, labels);
     stats->xAxis->setTicker(textTicker);
     stats->yAxis->setRange(0, max_value + 1);
 
-    stats->rescaleAxes();
-    stats->replot();
-    stats->setFixedHeight(225);
+    int update = update_desired ? 3 : 1;
+    replotStatsPlot(update);
 }
 
 void AlgorTabWidget::configureStatsPlot()
@@ -251,6 +337,10 @@ void AlgorTabWidget::configureStatsPlot()
     legendFont.setPointSize(10);
     stats->legend->setFont(legendFont);
     stats->setInteractions(QCP::iRangeDrag | QCP::iRangeZoom);
+
+    stats->setFixedHeight(225);
+
+    updateStatsPlot(true);
 }
 
 void AlgorTabWidget::updateTable(QString team_name)
@@ -259,7 +349,7 @@ void AlgorTabWidget::updateTable(QString team_name)
         return;
     current_team = team_name;
 
-    updateHeroesList();
+    configureHeroesList();
     updateStatsPlot();
 }
 
@@ -274,9 +364,6 @@ void AlgorTabWidget::CLR()
 
 void AlgorTabWidget::MAGIC()
 {
-    std::mt19937 gen(554534435345345);
-    std::uniform_int_distribution<> uid(0, 10);
-
     int heroes = 0;
 
     QSqlQuery qry;
@@ -369,59 +456,21 @@ void AlgorTabWidget::MAGIC()
             break;
     }
 
-    Update();
+    configureHeroesList();
+    updateStatsPlot();
 }
 
 void AlgorTabWidget::openRolesForm()
 {
-    QWidget* form = new QWidget();
-    QGridLayout* form_layout = new QGridLayout(form);
-    QGridLayout* layout = new QGridLayout();
-    form_layout->addLayout(layout, 0, 0, 1, 2);
-
-    layout->setColumnMinimumWidth(1, 30);
-    layout->setColumnStretch(0, 10000000);
-    layout->setColumnStretch(0, 1);
-
-    QSqlQuery qry;
-    qry.prepare("select role_name from roles order by role_name");
-    qry.exec();
-
-    int i = 0;
-    while(qry.next())
+    if(!roles_button->isChecked())
     {
-        QLabel* label = new QLabel(qry.value(0).toString());
-        label->setAlignment(Qt::AlignHCenter);
-        layout->addWidget(label, i++, 0, 1, 2);
-
-        QSlider* slider = new QSlider(Qt::Horizontal);
-        slider->setMaximum(25);
-        slider->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Ignored);
-        layout->addWidget(slider, i, 0);
-
-        QLabel* value = new QLabel("0");
-        layout->addWidget(value, i++, 1);
-
-        int data_index = i / 2 - 1;
-
-        connect(slider, &QSlider::valueChanged, [value, this, data_index](int val)
-        {
-            value->setText(QString::number(val));
-            desired_role_data[data_index] = val;
-qDebug()<<data_index<<" "<<desired_role_data.size();
-desired_team_bar->setData(ticks, desired_role_data);
-            stats->replot();
-        });
+        roles_button->setChecked(true);
+        return;
     }
 
-    QPushButton* avg_button = new QPushButton("AVG");
-    QPushButton* rand_button = new QPushButton("RND");
-
-    form_layout->addWidget(avg_button, 1, 0);
-    form_layout->addWidget(rand_button, 1, 1);
-
-    form->setAttribute(Qt::WA_DeleteOnClose);
-    form->show();
+    AlgorSliderForm* slider_form = new AlgorSliderForm(this);
+    connect(slider_form, &QObject::destroyed, roles_button, &QToolButton::toggle);
+    slider_form->show();
 }
 
 void AlgorTabWidget::PRINT()

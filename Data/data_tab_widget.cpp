@@ -469,7 +469,7 @@ void DataTabWidget::fillHeaderData()
     qry.exec("SHOW CREATE TABLE " + current_table);
     qry.next();
     QString show_create_table = qry.value(1).toString().toLower();
-    qDebug()<<show_create_table;
+    //qDebug()<<show_create_table;
 
     // PRIMARY KEYS
     QRegExp primary_reg_exp("primary key \\(([^\\)]*)\\)");

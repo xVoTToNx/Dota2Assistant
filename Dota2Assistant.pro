@@ -18,6 +18,7 @@ DEFINES += QT_DEPRECATED_WARNINGS
 #DEFINES += QT_DISABLE_DEPRECATED_BEFORE=0x060000    # disables all the APIs deprecated before Qt 6.0.0
 
 SOURCES += \
+    Algor/algor_slider_form.cpp \
     Algor/algor_tab_widget.cpp \
     Data/data_item_delegate.cpp \
     Data/data_tab_widget.cpp \
@@ -33,6 +34,7 @@ SOURCES += \
     search_proxy_model.cpp
 
 HEADERS += \
+    Algor/algor_slider_form.h \
     Algor/algor_tab_widget.h \
     Data/data_item_delegate.h \
     Data/data_tab_widget.h \
