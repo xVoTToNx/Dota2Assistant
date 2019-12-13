@@ -41,9 +41,11 @@ ItemIcon::ItemIcon(QString item_name, QWidget *parent)
   main_layout->addWidget(recomendations_list);
 
   connect(recomendations_list, &QListWidget::itemClicked,
-          [](QListWidgetItem * item){auto icon = HeroIcon::CreateMe(item->data(DATA_ROLE).toString());
+          [](QListWidgetItem * item){auto icon = HeroIcon::CreateMe(item->data(DATA_ROLE_IN_ITEM_ICON).toString());
           icon->setAttribute(Qt::WA_DeleteOnClose); icon->show(); });
   fillRecomendationsList(item_name);
+
+  setAttribute(Qt::WA_DeleteOnClose);
 }
 
 ItemIcon* ItemIcon::CreateMe(QString item_name)
@@ -105,7 +107,7 @@ void ItemIcon::fillRecomendationsList(QString item_name)
         }
 
         QListWidgetItem* item = new QListWidgetItem();
-        item->setData(DATA_ROLE, qry.value("hero_name"));
+        item->setData(DATA_ROLE_IN_ITEM_ICON, qry.value("hero_name"));
         item->setSizeHint({400, 120});
         recomendations_list->addItem(item);
         recomendations_list->setItemWidget(item, recomendation);

@@ -11,7 +11,7 @@
 #include "Algor/algor_tab_widget.h"
 
 #define HEADER(X, Y) X->headerData(Y, Qt::Horizontal, Qt::DisplayRole).toString()
-#define DATA_ROLE 66
+#define DATA_ROLE_IN_ITEM_ICON 66
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }
@@ -23,6 +23,21 @@ public:
     Q_OBJECT
 
 public:
+    enum Tabs
+    {
+        data,
+        icons,
+        algor
+    };
+
+    enum Mode
+    {
+        select_hero,
+        normal
+    };
+
+    Mode current_mode;
+
     static QSqlDatabase data_base;
     static void ThrowError(QString&& text);
     static int ThrowQuestion(QString &&text);
@@ -38,6 +53,13 @@ public:
 
     MainWindow(QWidget *parent = nullptr);
     ~MainWindow();
+
+    void ChangeTab(Tabs tab) { main_tab_widget->setCurrentIndex(tab); }
+    void ChangeMode(Mode mode) { current_mode = mode; emit ModeChanged(current_mode); }
+    Mode GetMode() {return current_mode; }
+
+signals:
+    void ModeChanged(Mode mode);
 
 private:
     bool configureDB();

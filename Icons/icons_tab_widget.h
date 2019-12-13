@@ -19,6 +19,7 @@
 #include "item_icon.h"
 #include "team_icon.h"
 
+class MainWindow;
 
 class IconsTabWidget : public QWidget
 {
@@ -32,6 +33,8 @@ private:
         item,
         team
     };
+
+    MainWindow* main_window;
 
     Icon current_table;
 
@@ -47,15 +50,15 @@ private:
     QPushButton* clear_button;
     QLineEdit* search_line_edit;
 
-
 public:
-    explicit IconsTabWidget(QString&& name = "", QWidget *parent = nullptr);
+    explicit IconsTabWidget(QString&& name = "", MainWindow* main_window = nullptr, QWidget *parent = nullptr);
 
     void Update() {updateTable(current_table);}
     QString GetName() { return name; }
 
 private slots:
     void updateTable(Icon icon);
+    void changeMode(int mode);
 };
 
 

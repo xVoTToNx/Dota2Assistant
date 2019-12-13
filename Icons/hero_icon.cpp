@@ -51,6 +51,8 @@ HeroIcon::HeroIcon(QString hero_name, QWidget *parent)
     main_layout->addLayout(pic_data_layout);
     main_layout->addWidget(skills_list);
     fillSkillsList(hero_name);
+
+    setAttribute(Qt::WA_DeleteOnClose);
 }
 
 

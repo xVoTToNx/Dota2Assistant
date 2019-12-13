@@ -75,10 +75,10 @@ MainWindow::MainWindow(QWidget *parent)
     data_tab_widget = new DataTabWidget("Data", this);
     main_tab_widget->addTab(data_tab_widget, data_tab_widget->GetName());
     qDebug()<<"DataTab Finished";
-    icons_tab_widget = new IconsTabWidget("Icons", this);
+    icons_tab_widget = new IconsTabWidget("Icons", this, this);
     main_tab_widget->addTab(icons_tab_widget, icons_tab_widget->GetName());
     qDebug()<<"IconTab Finished";
-    algor_tab_widget = new AlgorTabWidget("Algor", this);
+    algor_tab_widget = new AlgorTabWidget("Algor", this, this);
     main_tab_widget->addTab(algor_tab_widget, algor_tab_widget->GetName());
     qDebug()<<"AlgorTab Finished";
 

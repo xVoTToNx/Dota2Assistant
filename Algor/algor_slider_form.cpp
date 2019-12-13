@@ -11,9 +11,11 @@ AlgorSliderForm::AlgorSliderForm(AlgorTabWidget* algor_tab, QWidget* parent)
 {
     form_layout->addLayout(layout, 0, 0, 1, 2);
 
-    layout->setColumnMinimumWidth(1, 30);
     layout->setColumnStretch(0, 10000000);
+    layout->setColumnMinimumWidth(1, 30);
+    layout->setColumnMinimumWidth(2, 30);
     layout->setColumnStretch(0, 1);
+    layout->setColumnStretch(0, 2);
 
     QSqlQuery qry;
     qry.prepare("select role_name from roles order by role_name");
@@ -35,7 +37,13 @@ AlgorSliderForm::AlgorSliderForm(AlgorTabWidget* algor_tab, QWidget* parent)
 
         QLabel* value = new QLabel();
         value_labels << value;
-        layout->addWidget(value, i++, 1);
+        layout->addWidget(value, i, 1);
+
+        QPushButton* checkButton = new QPushButton();
+        checkButton->setFixedSize(30,30);
+        check_buttons << checkButton;
+        layout->addWidget(checkButton, i++, 2);
+
 
         int data_index = i / 2 - 1;
 
@@ -45,6 +53,9 @@ AlgorSliderForm::AlgorSliderForm(AlgorTabWidget* algor_tab, QWidget* parent)
 
         connect(slider, &QSlider::valueChanged, [this, data_index](int val)
         { updateSliderValue(data_index, val); });
+
+        connect(checkButton, &QPushButton::clicked, [this, data_index]()
+        { updateAttributesCheckBoxes(data_index); });
     }
 
     connect (avg_button, &QPushButton::clicked, this, &AlgorSliderForm::AVG);
@@ -67,13 +78,55 @@ void AlgorSliderForm::updateSliderValue(int slider_index, int value)
     algor_tab->replotStatsPlot(2);
 }
 
+void AlgorSliderForm::updateAttributesCheckBoxes(int new_index)
+{
+    int primary_attribute_index = algor_tab->getPrimaryAttributeIndex();
+    int secondary_attribute_index = algor_tab->getSecondaryAttributeIndex();
+
+    if(primary_attribute_index == -1 && secondary_attribute_index != new_index)
+    {
+        primary_attribute_index = new_index;
+        check_buttons[primary_attribute_index]->setStyleSheet("background-color: lime");
+        check_buttons[primary_attribute_index]->setText("Prim");
+    }
+    else if(secondary_attribute_index == -1 && primary_attribute_index != new_index)
+    {
+        secondary_attribute_index = new_index;
+        check_buttons[secondary_attribute_index]->setStyleSheet("background-color: cyan");
+        check_buttons[secondary_attribute_index]->setText("Sec");
+    }
+    else if(new_index == primary_attribute_index)
+    {
+        check_buttons[primary_attribute_index]->setStyleSheet("");
+        check_buttons[primary_attribute_index]->setText("");
+        primary_attribute_index = -1;
+    }
+    else if(new_index == secondary_attribute_index)
+    {
+        check_buttons[secondary_attribute_index]->setStyleSheet("");
+        check_buttons[secondary_attribute_index]->setText("");
+        secondary_attribute_index = -1;
+    }
+    else
+    {
+        check_buttons[secondary_attribute_index]->setStyleSheet("");
+        check_buttons[secondary_attribute_index]->setText("");
+
+        secondary_attribute_index = new_index;
+        check_buttons[secondary_attribute_index]->setStyleSheet("background-color: cyan");
+        check_buttons[secondary_attribute_index]->setText("Sec");
+    }
+
+    algor_tab->setPrimaryAttributeIndex(primary_attribute_index);
+    algor_tab->setSecondaryAttributeIndex(secondary_attribute_index);
+}
+
 void AlgorSliderForm::AVG()
 {
     for(int i = 0; i < algor_tab->sizeDesiredToleData(); ++i)
     {
         int value = 12;
-        algor_tab->setDesiredRoleData(i, value);
-        value_labels[i]->setText(QString::number(value));
+        updateSliderValue(i, value);
     }
 
     algor_tab->replotStatsPlot(2);
@@ -87,8 +140,7 @@ void AlgorSliderForm::RAND()
     for(int i = 0; i < algor_tab->sizeDesiredToleData(); ++i)
     {
         int value = uid(gen);
-        algor_tab->setDesiredRoleData(i, value);
-        value_labels[i]->setText(QString::number(value));
+        updateSliderValue(i, value);
     }
 
     algor_tab->replotStatsPlot(2);

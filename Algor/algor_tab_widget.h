@@ -21,15 +21,22 @@
 #include "algor_slider_form.h"
 #include <random>
 
+class MainWindow;
+
 class AlgorTabWidget : public QWidget
 {
 public:
     Q_OBJECT
 
 private:
-    QString name;
-    QString current_team;
-    int current_hero;
+    MainWindow* main_window;
+
+    QString tab_name;
+    QString current_team_name;
+    int current_hero_index;
+    int primary_attribute_index;
+    int secondary_attribute_index;
+
     QVector<QToolButton*> team_heroes;
 
     QVBoxLayout* layout;
@@ -62,10 +69,13 @@ private:
 
 
 public:
-    explicit AlgorTabWidget(QString&& name = "", QWidget *parent = nullptr);
+    explicit AlgorTabWidget(QString&& tab_name = "", MainWindow* main_window = nullptr, QWidget *parent = nullptr);
     ~AlgorTabWidget();
-    void Update() {updateTable(current_team);}
-    QString GetName() { return name; }
+    void Update() {updateTable(current_team_name);}
+    QString GetName() { return tab_name; }
+    QString GetCurrentTeamName() { return current_team_name; }
+
+    void DeleteCurrentHero() { clrHero(); }
 
     // If current_role_data and/or desired_role_data has been changed and we need to show it on the plot
     // 1 - update current_role_data bar values
@@ -76,6 +86,12 @@ public:
     void setDesiredRoleData(int index, int value) { desired_role_data[index] = value; }
     int getDesiredRoleData(int index) { return desired_role_data[index]; }
     int sizeDesiredToleData() { return desired_role_data.size(); }
+
+    void setPrimaryAttributeIndex(int index) { primary_attribute_index = index; }
+    int getPrimaryAttributeIndex() {return primary_attribute_index; }
+
+    void setSecondaryAttributeIndex(int index) { secondary_attribute_index = index; }
+    int getSecondaryAttributeIndex() {return secondary_attribute_index; }
 
 private:
     // If heroes of current team have been changed and we need to show it on icon list at the top
@@ -94,6 +110,9 @@ private:
     // Init the plot. Calls updateStatsPlot(true)
     void configureStatsPlot();
 
+    QToolButton* createHeroToolButton(QString& hero_name, int index);
+    QToolButton* createDummyToolButton(int index);
+
 private slots:
     // Global tab update
     // Calls  updateHeroesList() and updateStatsPlot()
@@ -102,6 +121,12 @@ private slots:
     void CLR();
     void openRolesForm();
     void PRINT();
+
+    void changeMode(int mode);
+    void pickHero();
+    void randHero();
+    void clrHero();
+    void infoHero();
 };
 
 #endif // ALGORTABWIDGET_H

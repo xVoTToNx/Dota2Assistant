@@ -47,6 +47,8 @@ TeamIcon::TeamIcon(QString team_name, QWidget *parent)
     main_layout->addLayout(heroes_layout);
 
     fillHeroesList(team_name);
+
+    setAttribute(Qt::WA_DeleteOnClose);
 }
 
 TeamIcon* TeamIcon::CreateMe(QString team_name)

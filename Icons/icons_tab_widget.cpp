@@ -3,8 +3,9 @@
 #include <cmath>
 #include <algorithm>
 
-IconsTabWidget::IconsTabWidget(QString&& name, QWidget *parent)
+IconsTabWidget::IconsTabWidget(QString&& name, MainWindow* main_window, QWidget *parent)
     : QWidget(parent)
+    , main_window(main_window)
     , current_table(Icon::hero)
     , name(name)
     , model (new QSqlTableModel(this, MainWindow::data_base))
@@ -59,6 +60,7 @@ IconsTabWidget::IconsTabWidget(QString&& name, QWidget *parent)
     main_layout->addLayout(button_layout);
     main_layout->addLayout(table_layout);
 
+    connect(main_window, &MainWindow::ModeChanged, this, &IconsTabWidget::changeMode);
 
     updateTable(current_table);
     setLayout(main_layout);
@@ -93,13 +95,13 @@ void IconsTabWidget::updateTable(Icon icon)
 
     for(size_t i = 0; i < filter_model->rowCount(); ++i)
     {
-        QString data = filter_model->data(filter_model->index(i,0)).toString();
+        QString hero_name = filter_model->data(filter_model->index(i,0)).toString();
         QString icon_path = filter_model->data(filter_model->index(i, 1)).toString();
         QToolButton* button = new QToolButton();
 
         button->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
         QVBoxLayout* button_icon_layout = new QVBoxLayout(button);
-        QLabel* name = new QLabel(data, button);
+        QLabel* name = new QLabel(hero_name, button);
         name->setAlignment(Qt::AlignCenter | Qt::AlignBottom);
         name->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Minimum);
         QIcon icon_icon(icon_path);
@@ -113,27 +115,71 @@ void IconsTabWidget::updateTable(Icon icon)
         button_icon_layout->addWidget(name);
         button_icon_layout->setAlignment(Qt::AlignHCenter);
 
+        MainWindow* main_window_copy = main_window;
         switch(icon)
         {
         case Icon::hero:
-            connect(button, &QPushButton::clicked, [data](){
-                auto icon = HeroIcon::CreateMe(data);
-                icon->setAttribute(Qt::WA_DeleteOnClose);
-                icon->show(); });
+            connect(button, &QPushButton::clicked, [hero_name, main_window_copy]()
+            {
+                if(main_window_copy->GetMode() == MainWindow::select_hero)
+                {
+                    QString team_name = main_window_copy->algor_tab_widget->GetCurrentTeamName();
+                    QSqlQuery qry;
+                    if(qry.exec("insert into team_heroes values ('" + hero_name + "', '" + team_name + "')"))
+                    {
+                        main_window_copy->algor_tab_widget->DeleteCurrentHero();
+
+                        main_window_copy->ChangeMode(MainWindow::normal);
+                        main_window_copy->ChangeTab(MainWindow::algor);
+                        main_window_copy->algor_tab_widget->Update();
+                    }
+                    else
+                    {
+                        MainWindow::ThrowError("This hero is already in the team! o((⊙﹏⊙))o");
+                    }
+                }
+                else
+                {
+                    auto icon = HeroIcon::CreateMe(hero_name);
+                    icon->show();
+                }
+            });
             break;
         case Icon::item:
-            connect(button, &QPushButton::clicked, [data](){
-                auto icon = ItemIcon::CreateMe(data);
-                icon->setAttribute(Qt::WA_DeleteOnClose);
+            connect(button, &QPushButton::clicked, [hero_name](){
+                auto icon = ItemIcon::CreateMe(hero_name);
                 icon->show(); });
             break;
         case Icon::team:
-            connect(button, &QPushButton::clicked, [data](){
-                auto icon = TeamIcon::CreateMe(data);
-                icon->setAttribute(Qt::WA_DeleteOnClose);
+            connect(button, &QPushButton::clicked, [hero_name](){
+                auto icon = TeamIcon::CreateMe(hero_name);
                 icon->show(); });
             break;
         }
         icons_layout->addWidget(button, 1 + i / columns, i % columns);
+    }
+}
+
+void IconsTabWidget::changeMode(int mode)
+{
+    switch(mode)
+    {
+    case MainWindow::select_hero:
+        if(button_layout->count() == 4)
+        {
+            QPushButton* selection_mode_button = new QPushButton("Hero selection\nMode");
+            selection_mode_button->setMinimumSize(150, 60);
+            selection_mode_button->setStyleSheet("background-color: lime");
+            button_layout->insertWidget(3, selection_mode_button);
+        }
+        break;
+    case MainWindow::normal:
+        if(button_layout->count() == 5)
+        {
+            auto item = button_layout->takeAt(3);
+            delete item->widget();
+            delete item;
+        }
+        break;
     }
 }

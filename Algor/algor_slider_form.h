@@ -7,6 +7,7 @@
 #include <QLabel>
 #include <QPushButton>
 #include <QSlider>
+#include <QCheckBox>
 
 class AlgorTabWidget;
 
@@ -21,6 +22,7 @@ class AlgorSliderForm : public QWidget
 
     QVector<QLabel*> value_labels;
     QVector<QSlider*> sliders;
+    QVector<QPushButton*> check_buttons;
 
     QPushButton* avg_button;
     QPushButton* rand_button;
@@ -32,6 +34,7 @@ public:
 
 private slots:
     void updateSliderValue(int slider_index, int value);
+    void updateAttributesCheckBoxes(int new_index);
     void AVG();
     void RAND();
 };
