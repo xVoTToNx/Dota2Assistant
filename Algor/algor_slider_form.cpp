@@ -64,6 +64,17 @@ AlgorSliderForm::AlgorSliderForm(AlgorTabWidget* algor_tab, QWidget* parent)
     form_layout->addWidget(avg_button, 1, 0);
     form_layout->addWidget(rand_button, 1, 1);
 
+    algor_tab->setRolePriorityIndex(check_buttons.count(), -1);
+    for(int i = 0; i < algor_tab->getRolePrioritySize(); ++i)
+    {
+        int index = algor_tab->getRolePriorityIndex(i);
+        if(index != -1)
+        {
+            check_buttons[index]->setStyleSheet("background-color: " + colors[i % 8]);
+            check_buttons[index]->setText(QString::number(i + 1));
+        }
+    }
+
     setAttribute(Qt::WA_DeleteOnClose);
 }
 
@@ -80,45 +91,29 @@ void AlgorSliderForm::updateSliderValue(int slider_index, int value)
 
 void AlgorSliderForm::updateAttributesCheckBoxes(int new_index)
 {
-    int primary_attribute_index = algor_tab->getPrimaryAttributeIndex();
-    int secondary_attribute_index = algor_tab->getSecondaryAttributeIndex();
+    int first_empty_index = -1;
 
-    if(primary_attribute_index == -1 && secondary_attribute_index != new_index)
+    for(int i = 0; i < algor_tab->getRolePrioritySize(); ++i)
     {
-        primary_attribute_index = new_index;
-        check_buttons[primary_attribute_index]->setStyleSheet("background-color: lime");
-        check_buttons[primary_attribute_index]->setText("Prim");
-    }
-    else if(secondary_attribute_index == -1 && primary_attribute_index != new_index)
-    {
-        secondary_attribute_index = new_index;
-        check_buttons[secondary_attribute_index]->setStyleSheet("background-color: cyan");
-        check_buttons[secondary_attribute_index]->setText("Sec");
-    }
-    else if(new_index == primary_attribute_index)
-    {
-        check_buttons[primary_attribute_index]->setStyleSheet("");
-        check_buttons[primary_attribute_index]->setText("");
-        primary_attribute_index = -1;
-    }
-    else if(new_index == secondary_attribute_index)
-    {
-        check_buttons[secondary_attribute_index]->setStyleSheet("");
-        check_buttons[secondary_attribute_index]->setText("");
-        secondary_attribute_index = -1;
-    }
-    else
-    {
-        check_buttons[secondary_attribute_index]->setStyleSheet("");
-        check_buttons[secondary_attribute_index]->setText("");
+        int index = algor_tab->getRolePriorityIndex(i);
+        if(index == -1 && first_empty_index == -1)
+            first_empty_index = i;
 
-        secondary_attribute_index = new_index;
-        check_buttons[secondary_attribute_index]->setStyleSheet("background-color: cyan");
-        check_buttons[secondary_attribute_index]->setText("Sec");
+        if(index == new_index)
+        {
+            check_buttons[index]->setStyleSheet("");
+            check_buttons[index]->setText("");
+            algor_tab->setRolePriorityIndex(i, -1);
+            return;
+        }
     }
 
-    algor_tab->setPrimaryAttributeIndex(primary_attribute_index);
-    algor_tab->setSecondaryAttributeIndex(secondary_attribute_index);
+    if(first_empty_index != -1)
+    {
+        check_buttons[new_index]->setStyleSheet("background-color: " + colors[first_empty_index % 8]);
+        check_buttons[new_index]->setText(QString::number(first_empty_index + 1) );
+        algor_tab->setRolePriorityIndex(first_empty_index, new_index);
+    }
 }
 
 void AlgorSliderForm::AVG()

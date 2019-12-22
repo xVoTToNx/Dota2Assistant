@@ -100,7 +100,7 @@ MainWindow::MainWindow(QWidget *parent)
 
     qDebug()<<"Everything's Ready";
     main_tab_widget->show();
-
+    main_tab_widget->setGeometry(main_tab_widget->x(), main_tab_widget->y(), 1000, 700);
     qDebug()<<"End Ctor";
 }
 

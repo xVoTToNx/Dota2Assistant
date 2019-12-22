@@ -7,8 +7,6 @@ AlgorTabWidget::AlgorTabWidget(QString &&name, MainWindow* main_window, QWidget 
     , tab_name (name)
     , current_team_name("")
     , current_hero_index(-1)
-    , primary_attribute_index(-1)
-    , secondary_attribute_index(-1)
     , layout (new QVBoxLayout())
     , team_label_layout (new QHBoxLayout)
     , choose_hero_button (new QToolButton(this))
@@ -114,9 +112,41 @@ void AlgorTabWidget::replotStatsPlot(int is_data_changed)
         current_team_bar->setData(ticks, current_role_data);
     if(is_data_changed & 0x0002)
         desired_team_bar->setData(ticks, desired_role_data);
+    if(is_data_changed & 0x0004)
+    {
+        QSharedPointer<QCPAxisTickerText> textTicker(new QCPAxisTickerText);
+        textTicker->addTicks(ticks, labels);
+        stats->xAxis->setTicker(textTicker);
+    }
 
     stats->rescaleAxes();
     stats->replot();
+}
+
+void AlgorTabWidget::setRolePriorityIndex(int priority, int index)
+{
+    int count = role_priority_indexes.count();
+    if(priority >= count)
+    {
+        for(int i = 0; i < priority - count + 1; ++i)
+        {
+            role_priority_indexes.push_back(-1);
+        }
+    }
+
+    // Change labels to see priorities on the gistogram
+    int labels_index = role_priority_indexes[priority];
+
+    if(index == -1 && labels_index != -1)
+        labels[labels_index] = labels[labels_index].split(' ').count() > 1 ? labels[labels_index].split(' ')[1] : labels[labels_index];
+    else if (index != -1)
+    {
+        labels[index] = QString::number(priority + 1) + ' ' + labels[index];
+    }
+
+    replotStatsPlot(4);
+
+    role_priority_indexes[priority] = index;
 }
 
 void AlgorTabWidget::updateHeroesList()
@@ -175,7 +205,7 @@ void AlgorTabWidget::changeCurrentHero(int new_hero_index)
         team_heroes[current_hero_index]->setStyleSheet(team_heroes[current_hero_index]->property("style").toString());
 
     current_hero_index = new_hero_index;
-    team_heroes[current_hero_index]->setStyleSheet("background-color: lime");
+    team_heroes[current_hero_index]->setStyleSheet("border: 4px inset lime");
 }
 
 void AlgorTabWidget::updateHeroRolesList(QString &hero_name, QString& picture_path)
@@ -205,6 +235,7 @@ void AlgorTabWidget::updateHeroRolesList(QString &hero_name, QString& picture_pa
         role_name[0] = role_name[0].toUpper();
 
         QLabel* role_label = new QLabel(role_name + ": " + qry.value("degree_of_affiliation").toString());
+        role_label->setAlignment(Qt::AlignHCenter | Qt::AlignCenter);
         list_item_layout->addWidget(role_label, i / 4, i % 4 + 1);
 
         ++i;
@@ -262,6 +293,15 @@ void AlgorTabWidget::updateStatsPlot(bool update_desired)
 
         if(update_desired)
             desired_role_data << i.value();
+    }
+
+    for(int i = 0; i < role_priority_indexes.count(); ++i)
+    {
+        int labels_index = role_priority_indexes[i];
+        if(labels_index != -1)
+        {
+            labels[labels_index] = QString::number(i + 1) + ' ' + labels[labels_index];
+        }
     }
 
     current_team_bar->setData(ticks, current_role_data);
@@ -329,6 +369,7 @@ void AlgorTabWidget::configureStatsPlot()
     QFont legendFont = font();
     legendFont.setPointSize(10);
     stats->legend->setFont(legendFont);
+    stats->xAxis->setTickLabelFont(legendFont);
     stats->setInteractions(QCP::iRangeDrag | QCP::iRangeZoom);
 
     stats->setFixedHeight(225);
@@ -405,6 +446,142 @@ void AlgorTabWidget::updateTable(QString team_name)
     updateStatsPlot();
 }
 
+void AlgorTabWidget::algorCurrentHero()
+{
+    for(int i = 0; i < role_priority_indexes.count(); ++i)
+    {
+        if(role_priority_indexes[i] == -1)
+            continue;
+
+        if(algorHeroByRole(role_priority_indexes[i]))
+            return;
+    }
+
+    for(int i = 0; i < current_role_data.count(); ++i)
+    {
+        if(algorHeroByRole(i))
+            return;
+    }
+
+    MainWindow::ThrowError("Sorry, but I couldn't pick you a hero. \nPlease, change preferences or pick him by youself. (⊙_⊙;)");
+}
+
+bool AlgorTabWidget::algorHeroByRole(int role_index)
+{
+    // If this role is already satisfied we cannot pick a hero using this one.
+    if(current_role_data[role_index] >= desired_role_data[role_index])
+        return false;
+
+    // Double check the result
+    int role_difference = desired_role_data[role_index] - current_role_data[role_index];
+    if(role_difference == 0)
+        return false;
+
+    auto label_list = labels[role_index].split(' ');
+    QString label_string = label_list.count() > 1 ? label_list[1] : label_list[0];
+
+    QSqlQuery qry;
+    QString qry_text = "select distinct hero_roles.hero_name, role_name, degree_of_affiliation from hero_roles, team_heroes "
+                       "where hero_roles.hero_name = team_heroes.hero_name and hero_roles.hero_name not in "
+                       "(select hero_name from team_heroes where team_name = '"+ current_team_name + "') "
+                       "and hero_roles.hero_name in "
+                       "(select hero_name from hero_roles where role_name = '" + label_string + "' "
+                       "and degree_of_affiliation = ";
+
+    // Look from the best to the worst heroes judging their degree of affiliation of current role
+    for(int i = role_difference; i > 0; --i)
+    {
+        qry.exec(qry_text + QString::number(i) + ") order by hero_roles.hero_name");
+        if(qry.size() > 0)
+            break;
+    }
+
+    // No heroes were found
+    if(qry.size() < 1)
+        return false;
+
+    QString hero_name = "";
+    bool is_good_for_team = true;
+    QMap<QString, int> average_hero_deviation;
+
+    while(qry.next())
+    {
+        if(hero_name != qry.value("hero_name").toString())
+        {
+            if(is_good_for_team && hero_name != "")
+            {
+                qry.exec("insert into team_heroes values ('" + hero_name + "', '" + current_team_name + "')");
+                return true;
+            }
+            else
+            {
+                hero_name = qry.value("hero_name").toString();
+                is_good_for_team = true;
+            }
+        }
+        else if (!is_good_for_team)
+            continue;
+
+        int current_role_degree = qry.value("degree_of_affiliation").toInt();
+        QString current_role_name = qry.value("role_name").toString();
+
+        int current_role_index = 0;
+
+        for(; current_role_index < labels.count(); ++current_role_index)
+        {
+            auto label_list = labels[current_role_index].split(' ');
+            QString test_string = label_list.count() > 1 ? label_list[1] : label_list[0];
+            if(test_string == current_role_name)
+                break;
+        }
+
+        int team_role_degree = current_role_data[current_role_index];
+        int desired_role_degree = desired_role_data[current_role_index];
+
+
+        // A hero is not suitable for the team.
+        if(team_role_degree + current_role_degree > desired_role_degree)
+            is_good_for_team = false;
+
+        if(std::find(role_priority_indexes.cbegin(), role_priority_indexes.cend(), current_role_index) != role_priority_indexes.cend())
+        {
+            average_hero_deviation[hero_name] = 0;
+            continue;
+        }
+
+        if(average_hero_deviation.contains(hero_name))
+            average_hero_deviation[hero_name] += std::pow((team_role_degree + current_role_degree - desired_role_degree), 2);
+        else
+            average_hero_deviation[hero_name] = std::pow((team_role_degree + current_role_degree - desired_role_degree), 2);
+    }
+
+    if(is_good_for_team)
+    {
+        qry.exec("insert into team_heroes values ('" + hero_name + "', '" + current_team_name + "')");
+        return true;
+    }
+    else
+    {
+        QString best_from_worst_hero = "";
+        int best_from_worst_deviation = INT_MAX;
+
+        for(auto i = average_hero_deviation.cbegin(); i != average_hero_deviation.cend(); ++i)
+            if(best_from_worst_deviation > i.value() && i.value() != 0)
+            {
+                best_from_worst_deviation = i.value();
+                best_from_worst_hero = i.key();
+            }
+
+        if(best_from_worst_hero != "")
+        {
+            qry.exec("insert into team_heroes values ('" + hero_name + "', '" + current_team_name + "')");
+            return true;
+        }
+        else
+            return false;
+    }
+}
+
 void AlgorTabWidget::CLR()
 {
     QSqlQuery qry;
@@ -416,100 +593,20 @@ void AlgorTabWidget::CLR()
 
 void AlgorTabWidget::MAGIC()
 {
-    int heroes = 0;
-
-    QSqlQuery qry;
-    qry.prepare("delete from team_heroes where team_name = '" + current_team_name + "'");
-    qry.exec();
-
-    // TANK
-    qry.prepare("select hero_name from hero_roles "
-                "where (role_name = 'tank' and degree_of_affiliation between 3 and 5) "
-                "or (role_name = 'initiator' and degree_of_affiliation between 3 and 5) ORDER BY RAND() LIMIT 1");
-    qry.exec();
-    if(qry.size() > 0)
+    for(int i = 0; i < 5; ++i)
     {
-        qry.next();
-        qry.prepare("insert into team_heroes values('" + qry.value(0).toString() +"', '" + current_team_name + "')" );
-        if(qry.exec())
-            ++heroes;
+        current_hero_index = i;
+        clrHero();
     }
 
-
-    // MID
-    qry.prepare("select hero_name from hero_roles where (role_name = 'midder'"
-                " and degree_of_affiliation between 3 and 5)ORDER BY RAND() LIMIT 1");
-    qry.exec();
-    if(qry.size() > 0)
+    for(int i = 0; i < 5; ++i)
     {
-        qry.next();
-        qry.prepare("insert into team_heroes values('" + qry.value(0).toString() +"', '" + current_team_name + "')" );
-        if(qry.exec())
-            ++heroes;
-    }
-
-    // CORE
-    qry.prepare("select hero_name from hero_roles"
-                " where (role_name = 'core' and degree_of_affiliation between 3 and 5)"
-                " or (role_name = 'stealth' and degree_of_affiliation between 3 and 5) ORDER BY RAND() LIMIT 1");
-    qry.exec();
-    if(qry.size() > 0)
-    {
-        qry.next();
-        qry.prepare("insert into team_heroes values('" + qry.value(0).toString() +"', '" + current_team_name + "')" );
-        if(qry.exec())
-            ++heroes;
-    }
-
-    // CORE 2
-    qry.prepare("select hero_name from hero_roles "
-                "where (role_name = 'killer' and degree_of_affiliation between 2 and 5) or "
-                "(role_name = 'core' and degree_of_affiliation between 3 and 5) "
-                "or (role_name = 'nuker' and degree_of_affiliation between 2 and 5) ORDER BY RAND() LIMIT 1");
-    qry.exec();
-    if(qry.size() > 0)
-    {
-        qry.next();
-        qry.prepare("insert into team_heroes values('" + qry.value(0).toString() +"', '" + current_team_name + "')" );
-        if(qry.exec())
-            ++heroes;
-    }
-
-
-    // SUPP
-    qry.prepare("select hero_name from hero_roles "
-                "where (role_name = 'support' and degree_of_affiliation between 3 and 5) or "
-                "(role_name = 'babysitter' and degree_of_affiliation between 3 and 5) ORDER BY RAND() LIMIT 1");
-    qry.exec();
-    if(qry.size() > 0)
-    {
-        qry.next();
-        qry.prepare("insert into team_heroes values('" + qry.value(0).toString() +"', '" + current_team_name + "')" );
-        if(qry.exec())
-            ++heroes;
-    }
-
-    QSqlQuery heroes_qry;
-    heroes_qry.prepare("select hero_name from heroes");
-    heroes_qry.exec();
-    int j = 0;
-    for(int i = heroes; i < 5; ++j)
-    {
-        if(!heroes_qry.next())
-            break;
-
-        qry.prepare("insert into team_heroes values('" + heroes_qry.value(0).toString() +"', '" + current_team_name + "')" );
-        if(qry.exec())
-        {
-            ++i;
-        }
-
-        if(j > qry.exec() * 3)
-            break;
+        current_hero_index = i;
+        algorCurrentHero();
+        updateStatsPlot();
     }
 
     configureHeroesList();
-    updateStatsPlot();
 }
 
 void AlgorTabWidget::openRolesForm()
@@ -565,7 +662,10 @@ void AlgorTabWidget::pickHero()
 
 void AlgorTabWidget::randHero()
 {
-
+    clrHero();
+    algorCurrentHero();
+    configureHeroesList();
+    updateStatsPlot();
 }
 
 void AlgorTabWidget::clrHero()

@@ -13,28 +13,34 @@ QWidget *DataItemDelegate::createEditor(QWidget *parent, const QStyleOptionViewI
 {
     QString data_type = getHeaderData(index.column(), Qt::UserRole + 1).toString();
 
-    if(data_type == "combo")
+    if (data_type == "combo")
     {
         QComboBox* box = new QComboBox(parent);
         box->addItems(getHeaderData(index.column(), Qt::UserRole + 2).value<QStringList>());
         box->setProperty("my_type", "combo");
         return box;
     }
-    else if(data_type == "boolean")
+    else if (data_type == "boolean")
     {
         QComboBox* box = new QComboBox(parent);
         box->addItems(getHeaderData(index.column(), Qt::UserRole + 2).value<QStringList>());
         box->setProperty("my_type", "boolean");
         return box;
     }
-    else if(data_type == "const")
+    else if (data_type == "const")
     {
         return nullptr;
     }
-    else if(data_type == "picture")
+    else if (data_type == "picture")
     {
         QLineEdit* edit = new QLineEdit(parent);
         edit->setProperty("my_type", "picture");
+        return edit;
+    }
+    else if (data_type == "description")
+    {
+        QLineEdit* edit = new QLineEdit(parent);
+        edit->setProperty("my_type", "description");
         return edit;
     }
 
@@ -74,6 +80,16 @@ void DataItemDelegate::setEditorData(QWidget *editor, const QModelIndex &index) 
         editor->setProperty("my_type", "picture_used");
         return;
     }
+    if(editor->property("my_type").toString() == "description")
+    {
+        QLineEdit* edit = static_cast<QLineEdit*>(editor);
+        QString initial_text = getModelData(proper_index, index.column()).toString();
+        QString text_desc = callTextBoxDialog(initial_text);
+
+        edit->setText(text_desc);
+        editor->setProperty("my_type", "description_used");
+        return;
+    }
 
     QStyledItemDelegate::setEditorData(editor, index);
 }
@@ -85,6 +101,21 @@ void DataItemDelegate::setModelData(QWidget *editor, QAbstractItemModel *model, 
     QVariant variant = editor->property(n);
 
     if(variant.toString() == getModelData(proper_index, index.column()).toString())
+        return;
+
+    if(HEADER(sql_model, index.column()) == "move_speed" && variant.toInt() < 100)
+        return;
+    if(HEADER(sql_model, index.column()) == "agility" && variant.toInt() < 0)
+        return;
+    if(HEADER(sql_model, index.column()) == "intelligence" && variant.toInt() < 0)
+        return;
+    if(HEADER(sql_model, index.column()) == "strength" && variant.toInt() < 101)
+        return;
+    if(HEADER(sql_model, index.column()) == "max_lvl" && variant.toInt() < 1)
+        return;
+    if(HEADER(sql_model, index.column()) == "price" && (variant.toInt() < 50 || variant.toInt() > 10000))
+        return;
+    if(HEADER(sql_model, index.column()) == "mark"  && (variant.toInt() < 0 || variant.toInt() > 10))
         return;
 
     if(editor->property("my_type").toString() == "boolean")
@@ -123,7 +154,14 @@ void DataItemDelegate::paint( QPainter *painter,const QStyleOptionViewItem &opti
             data = data.toInt() ? QVariant(true) : QVariant(false);
 
         painter->save();
+
+        if(option.state & QStyle::State_Selected)
+        {
+            painter->setBrush(QColor(0, 0, 255, 125));
+            painter->drawRect(option.rect);
+        }
         painter->drawText(option.rect, Qt::AlignCenter, displayText(data, QLocale::system()));
+
         painter->restore();
     }
     else
@@ -146,4 +184,39 @@ int DataItemDelegate::getProperIndex(int const row) const
 QVariant DataItemDelegate::getHeaderData(const int index, int const role) const
 {
     return sql_model->headerData(index, Qt::Orientation::Horizontal, role);
+}
+
+QString DataItemDelegate::callTextBoxDialog(QString &initial_text) const
+{
+    QString result = initial_text;
+
+    QDialog dialog;
+    QGridLayout* dialog_layout = new QGridLayout();
+    dialog.setLayout(dialog_layout);
+
+    QTextEdit* text_edit = new QTextEdit(initial_text);
+
+    QPushButton* ok_button = new QPushButton("OK");
+    QPushButton* cancel_button = new QPushButton("Cancel");
+
+    ok_button->setFixedHeight(30);
+    cancel_button->setFixedHeight(30);
+
+    text_edit->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+    ok_button->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
+    cancel_button->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
+
+    dialog_layout->addWidget(text_edit, 0, 0, 1, 2);
+    dialog_layout->addWidget(ok_button, 1, 0);
+    dialog_layout->addWidget(cancel_button, 1, 1);
+
+    connect(ok_button, &QPushButton::clicked, [&dialog, text_edit, &result]()
+    { result = text_edit->toPlainText(); dialog.close(); });
+
+    connect(cancel_button, &QPushButton::clicked, [&dialog]()
+    { dialog.close(); });
+
+    dialog.exec();
+
+    return result;
 }

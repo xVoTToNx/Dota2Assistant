@@ -20,6 +20,7 @@
 #include "qcpdocumentobject.h"
 #include "algor_slider_form.h"
 #include <random>
+#include <cmath>
 
 class MainWindow;
 
@@ -34,8 +35,7 @@ private:
     QString tab_name;
     QString current_team_name;
     int current_hero_index;
-    int primary_attribute_index;
-    int secondary_attribute_index;
+    QVector<int> role_priority_indexes;
 
     QVector<QToolButton*> team_heroes;
 
@@ -81,17 +81,16 @@ public:
     // 1 - update current_role_data bar values
     // 2 - desired_role_data bar values
     // 3 - both
+    // 4 - update labels
     void replotStatsPlot(int is_data_changed);
 
     void setDesiredRoleData(int index, int value) { desired_role_data[index] = value; }
     int getDesiredRoleData(int index) { return desired_role_data[index]; }
     int sizeDesiredToleData() { return desired_role_data.size(); }
 
-    void setPrimaryAttributeIndex(int index) { primary_attribute_index = index; }
-    int getPrimaryAttributeIndex() {return primary_attribute_index; }
-
-    void setSecondaryAttributeIndex(int index) { secondary_attribute_index = index; }
-    int getSecondaryAttributeIndex() {return secondary_attribute_index; }
+    void setRolePriorityIndex(int priority, int index);
+    int getRolePriorityIndex(int index) const {return role_priority_indexes[index]; }
+    int getRolePrioritySize() const {return role_priority_indexes.count(); }
 
 private:
     // If heroes of current team have been changed and we need to show it on icon list at the top
@@ -117,6 +116,8 @@ private slots:
     // Global tab update
     // Calls  updateHeroesList() and updateStatsPlot()
     void updateTable(QString team_name);
+    void algorCurrentHero();
+    bool algorHeroByRole(int role_index);
     void MAGIC();
     void CLR();
     void openRolesForm();

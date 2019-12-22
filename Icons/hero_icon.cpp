@@ -45,6 +45,75 @@ HeroIcon::HeroIcon(QString hero_name, QWidget *parent)
     data_layout->addWidget(move_speed_label, 5, 1);
     data_group->setLayout(data_layout);
 
+    QPushButton* push = new QPushButton("V Print");
+    data_layout->addWidget(push, 6, 0);
+    connect(push, &QPushButton::clicked, [this]()
+    {
+        QPrinter printer;
+        printer.setOutputFormat(QPrinter::PdfFormat);
+        printer.setOrientation(QPrinter::Orientation::Portrait);
+        QString fileName = QFileDialog::getSaveFileName(nullptr, "Export PDF", QString(), "*.pdf");
+        if (QFileInfo(fileName).suffix().isEmpty()) { fileName.append(".pdf"); }
+        printer.setOutputFileName(fileName);
+
+        QPainter painter;
+
+        if (! painter.begin(&printer)) { // failed to open file
+            qWarning("failed to open file, is it writable?");
+        }
+
+        if(this->width() > 0 && this->height() >0 ){
+
+            qreal xscale = 0.9*printer.pageRect().width()/qreal(this->width());
+            qreal yscale = 0.9*printer.pageRect().height()/qreal(this->height());
+
+            qreal scale = qMin(xscale, yscale);
+
+            painter.translate(printer.paperRect().x() + printer.pageRect().width()/2,
+                              printer.paperRect().y() + printer.pageRect().height()/2);
+
+            painter.scale(scale, scale);
+            painter.translate(-width()/2, -height()/2);
+            this->render(&painter);
+            painter.resetTransform();
+        }
+        painter.end();
+    });
+    QPushButton* pushV = new QPushButton("H Print");
+    data_layout->addWidget(pushV, 6, 1);
+    connect(pushV, &QPushButton::clicked, [this]()
+    {
+        QPrinter printer;
+        printer.setOutputFormat(QPrinter::PdfFormat);
+        printer.setOrientation(QPrinter::Orientation::Landscape);
+        QString fileName = QFileDialog::getSaveFileName(nullptr, "Export PDF", QString(), "*.pdf");
+        if (QFileInfo(fileName).suffix().isEmpty()) { fileName.append(".pdf"); }
+        printer.setOutputFileName(fileName);
+
+        QPainter painter;
+
+        if (! painter.begin(&printer)) { // failed to open file
+            qWarning("failed to open file, is it writable?");
+        }
+
+        if(this->width() > 0 && this->height() >0 ){
+
+            qreal xscale = 0.9*printer.pageRect().width()/qreal(this->width());
+            qreal yscale = 0.9*printer.pageRect().height()/qreal(this->height());
+
+            qreal scale = qMin(xscale, yscale);
+
+            painter.translate(printer.paperRect().x() + printer.pageRect().width()/2,
+                              printer.paperRect().y() + printer.pageRect().height()/2);
+
+            painter.scale(scale, scale);
+            painter.translate(-width()/2, -height()/2);
+            this->render(&painter);
+            painter.resetTransform();
+        }
+        painter.end();
+    });
+
     data_layout->setAlignment(Qt::AlignCenter);
     pic_data_layout->addWidget(data_group);
 

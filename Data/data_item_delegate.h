@@ -24,6 +24,7 @@ private:
     QVariant getModelData(int const row, int const column) const;
     int getProperIndex(int const row) const;
     QVariant getHeaderData(const int index, int const role) const;
+    QString callTextBoxDialog(QString& initial_text) const;
 };
 
 #endif // DATAITEMDELEGATE_H

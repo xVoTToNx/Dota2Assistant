@@ -27,6 +27,9 @@ class AlgorSliderForm : public QWidget
     QPushButton* avg_button;
     QPushButton* rand_button;
 
+    QVector<QString> colors {"lime", "cyan", "yellow", "red", "pink", "springgreen",
+                            "paleturquoise", "violet"};
+
 
 public:
     AlgorSliderForm(AlgorTabWidget* algor_tab, QWidget* parent = nullptr);

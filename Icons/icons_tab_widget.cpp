@@ -20,12 +20,18 @@ IconsTabWidget::IconsTabWidget(QString&& name, MainWindow* main_window, QWidget 
 {
     connect(filter_model, &QSqlTableModel::dataChanged, [this](){this->updateTable(this->current_table);});
 
+    QGroupBox* button_box = new QGroupBox();
+    button_box->setLayout(button_layout);
+
+    QGroupBox* table_box = new QGroupBox();
+    table_box->setLayout(table_layout);
+
+
     filter_model->setSourceModel(model);
     filter_model->setDynamicSortFilter(false);
 
     QLabel* label = new QLabel("Search: ", this);
-    label->setAlignment(Qt::AlignRight);
-
+    label->setAlignment(Qt::AlignCenter | Qt::AlignRight);
 
     auto func = std::bind(&FilterProxyModel::setExpression, filter_model, 0 ,std::placeholders::_1);
     connect(search_line_edit, &QLineEdit::textChanged, func);
@@ -57,8 +63,8 @@ IconsTabWidget::IconsTabWidget(QString&& name, MainWindow* main_window, QWidget 
     button_layout->addWidget(teams_button);
     button_layout->addWidget(dummy_widget);
 
-    main_layout->addLayout(button_layout);
-    main_layout->addLayout(table_layout);
+    main_layout->addWidget(button_box);
+    main_layout->addWidget(table_box);
 
     connect(main_window, &MainWindow::ModeChanged, this, &IconsTabWidget::changeMode);
 

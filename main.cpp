@@ -6,8 +6,6 @@ int main(int argc, char *argv[])
 {
     QApplication a(argc, argv);
     MainWindow w;
-
+// Как вариант сделать добавление ВСЕХ полей сразу, а не только ключей.
     return a.exec();
-
-    // Ты переписал DataItemDelegate::paint и поэтому не видно выделение, так что на этапе косметики пофикси.
 }

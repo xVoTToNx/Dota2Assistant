@@ -97,13 +97,11 @@ void DataTabWidget::insertRow()
     QDialog* dialog = new QDialog(this);
     QVBoxLayout* layout = new QVBoxLayout();
 
-
     QVector<QWidget*> widgets;
 
     QPushButton* button = new QPushButton("Insert!");
     connect(button, &QPushButton::clicked, dialog, &QDialog::close);
     dialog->setLayout(layout);
-
 
     int i = 0;
     for(; i < model->columnCount(); ++i)
@@ -319,6 +317,7 @@ void DataTabWidget::printTable()
 void DataTabWidget::changeFilterSearchTabs()
 {
     QGridLayout* filter_layout = static_cast<QGridLayout*>(filter_tab_widget->layout());
+    filter_layout->setAlignment(Qt::AlignHCenter);
     QGridLayout* search_layout = static_cast<QGridLayout*>(search_tab_widget->layout());
 
     QLayoutItem* item;
@@ -544,6 +543,13 @@ void DataTabWidget::fillHeaderData()
     addHeaderData(show_create_table, picture_reg_exp, [](QStringList& list, int i, QSqlTableModel* model)
     {
         model->setHeaderData(i, Qt::Orientation::Horizontal, "picture", Qt::UserRole + 1);
+    });
+
+    // PICTURES
+    QRegExp description_reg_exp("(description)");
+    addHeaderData(show_create_table, description_reg_exp, [](QStringList& list, int i, QSqlTableModel* model)
+    {
+        model->setHeaderData(i, Qt::Orientation::Horizontal, "description", Qt::UserRole + 1);
     });
 }
 

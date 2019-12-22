@@ -29,7 +29,6 @@ public:
 
 private:
     void fillHeroesList(QString team_name);
-    void createTeamStats(QString team_name);
 };
 
 #endif // TEAMICON_H
